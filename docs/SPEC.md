@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.2 (v0.2: V ranges made optional, FBS has no official V mapping) |
+| Status | Draft v0.4 (v0.2: V ranges optional. v0.3: start-arrow grades, hold color required. v0.4: bundle id, dev workflow, ADR links) |
 | Date | 2026-09-30 |
 | Owner | Sebastian Thomsen |
 | Source | Requirements interview in Cowork, 2026-09-24/25 (decisions summarized in section 17) |
@@ -120,7 +120,8 @@ Short Norwegian text covering: do not film or share other people without their c
 | Wall | A named sector inside a gym ("Vegg 3", "Hulen"). |
 | Grade scale | Ordered list of grades used by a gym (colors, V or Font). |
 | Grade | One step in a scale. May carry an approximate V range, but most color gyms publish none. |
-| Boulder | A specific problem on a wall: gym, wall, grade, photo. Archived when the gym resets it. |
+| Boulder | A specific problem on a wall: gym, wall, grade, hold color, photo. Archived when the gym resets it. |
+| Start arrow | Colored arrow at the start holds. At FBS its color is the grade; it is independent of the hold color. |
 | Ascent / quick log | A user's record for one boulder: attempted, sent or flashed. No post needed. |
 | Post | Caption and 0–5 media items, shared to zero or more audiences. |
 | Media item | One photo or video in a post; may be tagged with a boulder and a result. |
@@ -261,7 +262,7 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 - **GRADE-2** A gym has one active scale. If a gym changes system, a new scale is created; existing boulders keep their grade.
 - **GRADE-3** Stats and "hardest" comparisons use the ordinal within the gym's scale and are shown with the gym's own labels and colors. Grades from different scales are never mixed. Cross-gym comparison is out of scope for the beta (one gym); see section 15 and 16.
 - **GRADE-4** Grade chips always show text next to the color swatch (color-blind users; white needs a visible border).
-- **GRADE-5** FBS scale: kind `color`, no V range (FBS publishes no V mapping). Order is the user's best recollection **[VERIFY]**:
+- **GRADE-5** FBS scale: kind `color`, no V range (FBS publishes no V mapping). FBS marks the grade with a **colored arrow at the start holds**; the color of the holds says nothing about the grade. The UI therefore labels the grade "Grad (farge på startpil)" and the hold color "Grepfarge". Order is the user's best recollection **[VERIFY]**:
 
 | Ordinal | Label |
 |---|---|
@@ -276,12 +277,13 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 ### 6.6 Walls and boulders (BLD), B1
 
 - **BLD-1** Walls belong to a gym, have a name and sort order, and are managed by the app admin. FBS wall names **[VERIFY]**.
-- **BLD-2** Any user can create a boulder: wall, grade and photo are required (taken in-app or picked from the library); hold color, short name/note (≤ 60 chars) and set date are optional.
-- **BLD-3** Duplicate check: after choosing wall and grade, the app shows the active boulders with the same wall and grade as a photo grid ("Er det en av disse?"). A new boulder is only created after "Ingen av disse".
+- **BLD-2** Any user can create a boulder. Required: wall, grade (start-arrow color at FBS), hold color and photo (taken in-app or picked from the library, hint: "Ta bildet så startpilen og grepene synes"). Optional: short name/note (≤ 60 chars) and set date.
+- **BLD-2a** Hold color comes from a fixed palette in app config: `hvit`, `gul`, `oransje`, `rød`, `rosa`, `lilla`, `blå`, `grønn`, `svart`, `grå`, `brun`, `blandet`. `blandet` is for problems whose holds have several colors. Grade and hold color are separate fields and are always shown together, e.g. "Rød pil · blå grep".
+- **BLD-3** Duplicate check: after choosing wall, grade and hold color, the app shows the active boulders with the same wall, grade and hold color as a photo grid ("Er det en av disse?"). If the hold color is `blandet`, it matches on wall and grade only. A new boulder is only created after "Ingen av disse".
 - **BLD-4** Archiving: any user can mark a boulder "Skrudd ned", or use "Hele veggen er skrudd om" to archive every active boulder on a wall (with confirmation). Any user can restore within 14 days; the admin can always restore. Every change is recorded in `boulder_events` with the actor.
 - **BLD-5** Merge (admin): the duplicate's ascents and media tags move to the kept boulder. If a user has ascents on both, the result keeps the best status (sent over attempted), flash if either was a flash, the earliest `first_logged_at` and the earliest `sent_at`. The duplicate gets status `merged` with `merged_into_id`, and API reads of it return a pointer to the kept boulder.
 - **BLD-6** The creator and the admin can edit grade, wall, photo and notes. A regrade changes stats retroactively (stats are computed on read).
-- **BLD-7** Boulder page: photo, grade, wall, status, set date, "Hvem har toppet" (5.4, friends first), media tagged to the boulder that the viewer may see (spoiler rules apply), and quick-log buttons.
+- **BLD-7** Boulder page: photo, grade (start-arrow color), hold color, wall, status, set date, "Hvem har toppet" (5.4, friends first), media tagged to the boulder that the viewer may see (spoiler rules apply), and quick-log buttons.
 - **BLD-8** Archived boulders are hidden from default lists ("Vis nedskrudde" shows them) and can still be logged, with the note "Denne er skrudd ned".
 - Boulders are never hard-deleted, only archived or merged.
 
@@ -297,7 +299,7 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 ### 6.8 Posts and media (POST), B1
 
 - **POST-1** Composer: 0–5 media items (photos and videos mixed), caption ≤ 2000 chars (at least one of media or caption), optional gym (set automatically when a media item is tagged with a boulder), audience picker with "Profil" and each of the user's groups (multi-select). Nothing selected means "Bare meg".
-- **POST-2** Each media item can be tagged with a boulder (picker: gym → wall → grade → photo grid) and a result: "Forsøk", "Toppet" or "Flash" (a result requires a boulder). The composer nudges tagging: "Tagg bulderen så vennene dine slipper spoilere".
+- **POST-2** Each media item can be tagged with a boulder (picker: gym → wall → grade → hold color → photo grid) and a result: "Forsøk", "Toppet" or "Flash" (a result requires a boulder). The composer nudges tagging: "Tagg bulderen så vennene dine slipper spoilere".
 - **POST-3** Video: max 60 s, trimmed in-app if longer; compressed on the device to ≤ 1280 px on the long edge, H.264/AAC MP4, target around 1.2–1.5 Mbit/s (about 10 MB per minute); hard cap 25 MB per file.
 - **POST-4** Photos: resized to ≤ 2048 px on the long edge, JPEG quality about 0.8, re-encoded on the device so EXIF (including GPS) is removed; HEIC is converted to JPEG; hard cap 5 MB.
 - **POST-5** Thumbnails (480 px JPEG) are generated on the device; for videos from a frame around 1 s.
@@ -450,13 +452,14 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 | Concern | Choice |
 |---|---|
 | Framework | Expo (latest SDK at project start), React Native, TypeScript in strict mode, Expo Router |
+| Identifiers | Bundle identifier and Android package `no.swthomsen.boulder`; deep link scheme `boulder` |
 | Builds | Development builds, not Expo Go (native modules are needed). iOS builds through EAS Build in the cloud because development happens on Windows. Android builds locally when possible to save the EAS free build quota. |
 | Server state | TanStack Query |
 | Local state | Zustand, kept small |
 | Forms | react-hook-form + zod |
 | API client | TypeScript types generated from the API's OpenAPI document (openapi-typescript + openapi-fetch); regenerated in CI with a drift check |
-| Media | expo-image-picker, expo-image-manipulator (resize, EXIF removal), a video compression library such as react-native-compressor **[ADR]**, a trimming component **[ADR]**, expo-video-thumbnails, expo-video for playback, expo-image for display (cache key = media id) |
-| Storage | Session via LargeSecureStore; outbox in expo-sqlite **[ADR]** |
+| Media | expo-image-picker, expo-image-manipulator (resize, EXIF removal), a video compression library such as react-native-compressor and a trimming component (both chosen in phase 14 with an ADR), expo-video-thumbnails, expo-video for playback, expo-image for display (cache key = media id) |
+| Storage | Session via LargeSecureStore; outbox in expo-sqlite (ADR-0008) |
 | Other | expo-notifications, @react-native-community/netinfo, @microsoft/signalr (B2) |
 | Tests | Jest + React Native Testing Library; Maestro end-to-end tests Later |
 
@@ -465,13 +468,13 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 | Concern | Choice |
 |---|---|
 | Runtime | .NET 10 (LTS), ASP.NET Core |
-| API style | Minimal APIs with endpoint groups per feature **[ADR]** |
+| API style | Minimal APIs with endpoint groups per feature (ADR-0006) |
 | Structure | Modular monolith organized by feature (Users, Groups, Gyms, Boulders, Posts, Social, Notifications, Moderation, Chat, Sessions); layering detailed in `docs/architecture.md` |
 | Data | PostgreSQL 17 or newer, EF Core with Npgsql, EF migrations, `citext` for usernames |
 | IDs | UUIDv7 (`Guid.CreateVersion7()`), serialized as strings; gives time-ordered cursors |
 | Authorization | One central visibility component implementing section 5 (query filters/specifications). Endpoints never hand-roll visibility checks. |
 | Validation and errors | Request validation on every endpoint; errors as RFC 9457 ProblemDetails with a machine-readable `code` |
-| Background work | Postgres job table processed by a hosted `BackgroundService` using `FOR UPDATE SKIP LOCKED` (notifications, media purge, pending-post cleanup, thread purge, reminders, check-in expiry, storage usage) **[ADR: custom vs Hangfire/Quartz]** |
+| Background work | Postgres job table processed by a hosted `BackgroundService` using `FOR UPDATE SKIP LOCKED` (notifications, media purge, pending-post cleanup, thread purge, reminders, check-in expiry, storage usage) (ADR-0007) |
 | Realtime (B2) | SignalR on a single instance, no backplane |
 | Object storage | AWS SDK for S3 against the R2 endpoint (presign PUT/GET, HEAD, DELETE) |
 | Push | Expo Push HTTP API with an access token; receipt checking |
@@ -513,6 +516,8 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 ### 8.6 Development approach
 
 Each feature is built UI first: screens are built against a typed mock API layer that uses the same generated TypeScript types, to find the data the UI actually needs. Then the endpoints are implemented, and the mocks are swapped for the real client. Once an endpoint exists, its OpenAPI document is the contract. The trade-off is that a UI can assume data the privacy model cannot provide; this is limited by section 5 being fixed before any UI work. PLAN.md phases follow this order.
+
+Workflow per phase (ADR-0009): Claude Code runs `/implement-phase N` on a branch `phase/NN-slug`, opens a PR, and the `pr-reviewer` subagent (Opus, fresh context) posts an independent review. Sebastian merges after CI is green. The repository is public, and `main` is protected (PR and green CI required).
 
 ---
 
@@ -584,7 +589,7 @@ Avatars, boulder photos and chat photos use the same idea through `POST /api/v1/
 
 - **SEC-7** Invite tokens: 128 bits from a CSPRNG, base64url, stored only as SHA-256 hash, looked up by hash. Expiry, max uses and revocation are enforced atomically. Banned users cannot join.
 - **SEC-8** Media: private bucket; R2 credentials only on the server, scoped to the one bucket; presigned PUT with signed Content-Type and Content-Length (15 min); verification on publish; presigned GET (60 min).
-- **SEC-9** Secrets live in environment variables / `.env` on the server and in GitHub Actions secrets, never in git. Claude Code is denied read access to `.env*` files (configured in `.claude/settings.json` later).
+- **SEC-9** Secrets live in environment variables / `.env` on the server and in GitHub Actions secrets, never in git. Claude Code is denied read access to `.env*` files and key files in `.claude/settings.json`. The repository is public, so GitHub secret scanning and push protection are enabled.
 - **SEC-10** SignalR (B2): the access token is passed in the `access_token` query string only for WebSocket connections and is scrubbed from Caddy and ASP.NET request logs. Hub methods authorize on every call.
 - **SEC-11** Logs contain user ids only: no tokens, emails, captions, comments or message bodies. Log retention 14 days.
 - **SEC-12** Dependabot for NuGet, npm, GitHub Actions and Docker. CI fails on known vulnerable NuGet packages.
@@ -645,7 +650,7 @@ PostgreSQL. All ids are UUIDv7 unless noted. All timestamps are `timestamptz`. `
 | `walls` | `id`, `gym_id`, `name`, `sort_order`, `is_active` | unique (`gym_id`, `name`) |
 | `grade_scales` | `id`, `name`, `kind` (`color`/`v`/`font`), `gym_id` NULL, `created_at`, `retired_at` | |
 | `grades` | `id`, `scale_id`, `ordinal`, `label`, `color_hex` NULL, `v_min` NULL, `v_max` NULL | unique (`scale_id`, `ordinal`); check both null, or both set with `v_min ≤ v_max` |
-| `boulders` | `id`, `gym_id`, `wall_id`, `grade_id`, `hold_color` NULL, `name` NULL, `photo_media_id`, `set_on` NULL (date), `status` (`active`/`archived`/`merged`), `archived_at`, `archived_by`, `merged_into_id` NULL, `created_by` NULL, `created_at`, `updated_at` | index (`gym_id`, `status`, `wall_id`, `grade_id`) |
+| `boulders` | `id`, `gym_id`, `wall_id`, `grade_id`, `hold_color` (palette value, see BLD-2a), `name` NULL, `photo_media_id`, `set_on` NULL (date), `status` (`active`/`archived`/`merged`), `archived_at`, `archived_by`, `merged_into_id` NULL, `created_by` NULL, `created_at`, `updated_at` | index (`gym_id`, `status`, `wall_id`, `grade_id`, `hold_color`) |
 | `boulder_events` | `id`, `boulder_id`, `actor_id` NULL, `type` (`created`/`edited`/`archived`/`restored`/`merged`), `details` jsonb, `created_at` | index (`boulder_id`, `created_at`) |
 | `ascents` | `user_id`, `boulder_id`, `status` (`attempted`/`sent`), `is_flash`, `attempts` NULL, `first_logged_at`, `sent_at` NULL, `updated_at` | PK (`user_id`, `boulder_id`); check `is_flash` implies `sent`; index (`boulder_id`, `status`); index (`user_id`, `sent_at`) |
 
@@ -763,10 +768,10 @@ Base path `/api/v1`. JSON with camelCase. Lists use cursor pagination (`?cursor=
 ## 15. Open questions and items to verify
 
 1. FBS grade colors and order (current recollection: hvit, grønn, blå, gul, rød, svart, lilla).
-2. Does FBS mark grades by hold color or by tags/tape? Decides whether `hold_color` is useful or redundant.
+2. ~~Does FBS mark grades by hold color or by tags/tape?~~ Resolved 2026-09-30: by a colored arrow at the start holds; hold color is independent (GRADE-5, BLD-2a).
 3. FBS wall/sector names and how often walls are reset.
 4. FBS coordinates, holiday hours, and whether the prices on fkk.no/priser apply to FBS.
-5. App name (affects bundle id, deep link scheme and store listings).
+5. App display name for the stores. (Bundle id decided 2026-09-30: `no.swthomsen.boulder`; scheme `boulder`.)
 6. Expected number of beta users (affects the 500 MB quota).
 7. Should new group members see the full chat history (default yes)?
 8. Sentry EU data region on the free plan.
@@ -827,4 +832,7 @@ Base path `/api/v1`. JSON with camelCase. Lists use cursor pagination (`?cursor=
 | 30 | Releases | Beta 1 (core social + logging), Beta 2 (chat, sessions, check-in) | Friends get the app sooner |
 | 31 | Admin | In-app admin screens | No extra frontend to host |
 | 32 | Editing audiences | Allowed; removed audience's thread hidden, restorable for 30 days | Mistakes can be fixed without losing comments |
+| 33 | Boulder identity | Grade = start-arrow color; hold color required (fixed palette incl. "blandet") and used in the duplicate check | At FBS the arrow gives the grade, so hold color is what tells problems of the same grade on a wall apart |
+| 34 | Bundle id | `no.swthomsen.boulder`, scheme `boulder` | Cannot change after store registration; display name can |
+| 35 | Dev workflow | Branch per phase, PR, independent Opus review subagent, Sebastian merges; public repo with branch protection (ADR-0009) | Same-model review shares blind spots, and Sebastian must know the code |
 
