@@ -7,6 +7,11 @@ updates:
     groups:
       dotnet-dependencies:
         patterns: ["*"]
+    ignore:
+      # 3.x breaks the Microsoft.AspNetCore.OpenApi source generator (CS0200). Upgrade together
+      # with a .NET / ASP.NET Core upgrade that supports it.
+      - dependency-name: "Microsoft.OpenApi"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /apps/mobile
@@ -15,6 +20,33 @@ updates:
     groups:
       mobile-dependencies:
         patterns: ["*"]
+    ignore:
+      # Pinned by the Expo SDK (see `npx expo install --check`). Upgrade them with the Expo SDK,
+      # never on their own: React and React Native versions must match what the SDK was built for.
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "react-native"
+      - dependency-name: "react-test-renderer"
+      - dependency-name: "@types/react"
+      - dependency-name: "@types/react-test-renderer"
+      - dependency-name: "react-native-screens"
+      - dependency-name: "react-native-safe-area-context"
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "jest-expo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Tooling versions that the Expo SDK's own packages (jest-expo, eslint-config-expo, the
+      # Expo TypeScript base config) are built and tested against.
+      - dependency-name: "jest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/jest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
