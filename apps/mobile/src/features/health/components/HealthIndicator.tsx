@@ -1,13 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { Text } from "react-native";
 
-import { typography, useColors } from "@/theme";
+import { useColors, useTypography } from "@/theme";
 
 import { useHealth } from "../hooks";
 
 export function HealthIndicator() {
   const { t } = useTranslation();
   const colors = useColors();
+  const typography = useTypography();
   const { data, isPending, isError } = useHealth();
 
   const failed = isError || data === "Unhealthy";
