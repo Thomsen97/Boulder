@@ -1,4 +1,19 @@
 {
+  "app": {
+    "name": "Boulder"
+  },
+  "common": {
+    "back": "Tilbake",
+    "loading": "Laster …",
+    "retry": "Prøv igjen",
+    "errorTitle": "Noe gikk galt",
+    "errorBody": "Vi kunne ikke hente dataene. Sjekk nettforbindelsen og prøv igjen.",
+    "cancel": "Avbryt",
+    "save": "Lagre",
+    "saving": "Lagrer …",
+    "notFoundTitle": "Fant ikke brukeren",
+    "notFoundBody": "Brukeren finnes ikke, eller du har ikke tilgang til profilen."
+  },
   "tabs": {
     "home": "Hjem",
     "groups": "Grupper",
@@ -10,13 +25,155 @@
     "home": "Her kommer hjem-feeden.",
     "groups": "Her kommer gruppene dine.",
     "gym": "Her kommer gymmet.",
-    "notifications": "Her kommer varslene dine.",
-    "profile": "Her kommer profilen din."
+    "notifications": "Her kommer varslene dine."
   },
   "health": {
     "label": "Server",
     "loading": "Sjekker tilkobling …",
     "ok": "Tilkoblet",
     "error": "Ingen kontakt med serveren"
+  },
+  "welcome": {
+    "tagline": "Buldring med vennene dine",
+    "signInApple": "Fortsett med Apple",
+    "signInGoogle": "Fortsett med Google",
+    "signInEmail": "Fortsett med e-post",
+    "mockNotice": "Testversjon: innloggingen er foreløpig falsk, og alle data er eksempler."
+  },
+  "onboarding": {
+    "title": "Velkommen!",
+    "intro": "Velg brukernavn og navn, så er du i gang.",
+    "avatarLater": "Profilbilde kan du legge til senere.",
+    "usernameLabel": "Brukernavn",
+    "usernameHint": "3–20 tegn: små bokstaver, tall, punktum og understrek. Må starte med en bokstav.",
+    "displayNameLabel": "Navn",
+    "ageLabel": "Jeg er 16 år eller eldre",
+    "acceptGuidelines": "Jeg har lest og godtar retningslinjene",
+    "submit": "Kom i gang",
+    "submitting": "Oppretter profil …",
+    "error": {
+      "ageRequired": "Du må være 16 år eller eldre for å bruke Boulder.",
+      "guidelinesRequired": "Du må godta retningslinjene for å fortsette.",
+      "usernameTaken": "Brukernavnet ble nettopp tatt. Velg et annet.",
+      "generic": "Kunne ikke opprette profilen. Prøv igjen."
+    }
+  },
+  "guidelines": {
+    "title": "Retningslinjer for fellesskapet",
+    "intro": "Boulder er et sted for buldrevenner. For at alle skal ha det trygt og hyggelig, ber vi deg følge disse reglene:",
+    "rule1": "Ikke film eller del andre uten at de har sagt ja, særlig ikke barn.",
+    "rule2": "Ingen trakassering, hets eller mobbing.",
+    "rule3": "Ingen spam eller reklame.",
+    "rule4": "Hold innholdet til klatring og buldring.",
+    "outro": "Brudd kan føre til at innhold fjernes eller at kontoen din blir suspendert."
+  },
+  "username": {
+    "status": {
+      "checking": "Sjekker om brukernavnet er ledig …",
+      "available": "Brukernavnet er ledig",
+      "taken": "Brukernavnet er opptatt",
+      "error": "Kunne ikke sjekke brukernavnet akkurat nå"
+    },
+    "error": {
+      "tooShort": "Brukernavnet må ha minst 3 tegn.",
+      "tooLong": "Brukernavnet kan ha maks 20 tegn.",
+      "invalidChars": "Bruk bare små bokstaver, tall, punktum og understrek.",
+      "mustStartWithLetter": "Brukernavnet må starte med en bokstav.",
+      "reserved": "Dette brukernavnet er reservert."
+    }
+  },
+  "profile": {
+    "followersCount": "{{count}} følgere",
+    "followingCount": "følger {{count}}",
+    "private": "Privat profil",
+    "privateTitle": "Denne profilen er privat",
+    "privateBody": "Følg brukeren for å se innlegg og statistikk.",
+    "statsTitle": "Statistikk",
+    "statsEmpty": "Ingen toppede buldre ennå.",
+    "postsTitle": "Innlegg",
+    "postsEmptyTitle": "Ingen innlegg ennå",
+    "postsEmptyBody": "Innlegg dukker opp her når de er lagt ut.",
+    "follow": "Følg",
+    "followPrivate": "Be om å følge",
+    "requested": "Forespørsel sendt",
+    "cancelRequest": "Avbryt forespørsel",
+    "following": "Følger",
+    "unfollow": "Slutt å følge",
+    "edit": "Rediger profil",
+    "settings": "Innstillinger",
+    "block": "Blokker brukeren",
+    "blockConfirmTitle": "Blokkere @{{username}}?",
+    "blockConfirmMessage": "Dere slutter å følge hverandre, og dere ser ikke hverandres innhold utenfor felles grupper. Personen får ikke vite om det.",
+    "blockConfirm": "Blokker",
+    "error": {
+      "displayNameRequired": "Skriv inn et navn.",
+      "displayNameTooLong": "Navnet kan ha maks 50 tegn.",
+      "bioTooLong": "Bioen kan ha maks 160 tegn."
+    }
+  },
+  "editProfile": {
+    "title": "Rediger profil",
+    "displayNameLabel": "Navn",
+    "bioLabel": "Bio",
+    "bioCounter": "{{count}} av 160 tegn",
+    "usernameLabel": "Brukernavn",
+    "usernameLocked": "Du kan bytte brukernavn igjen {{date}}.",
+    "avatarLater": "Bytte av profilbilde kommer senere.",
+    "saveError": "Kunne ikke lagre. Prøv igjen.",
+    "usernameTaken": "Brukernavnet er opptatt."
+  },
+  "settings": {
+    "title": "Innstillinger",
+    "privacySection": "Personvern",
+    "privateProfile": "Privat profil",
+    "privateProfileHint": "Bare følgere du godkjenner ser innleggene dine.",
+    "makePublicTitle": "Gjøre profilen offentlig?",
+    "makePublicMessage": "Alle innlegg på profilen din blir synlige for alle, også på gymsiden. Ventende følgeforespørsler godkjennes.",
+    "makePublicConfirm": "Gjør offentlig",
+    "shareAscents": "Del loggene mine",
+    "shareAscentsHint": "Andre kan se hvilke buldre du har prøvd og toppet.",
+    "spoilerSection": "Skjul beta",
+    "spoilerHint": "Skjuler videoer som viser løsningen på buldre du ikke har toppet.",
+    "spoilerOff": "Av",
+    "spoilerProjects": "Prosjektene mine",
+    "spoilerProjectsHint": "Buldre jeg har prøvd, men ikke toppet",
+    "spoilerAll": "Alle buldre jeg ikke har toppet",
+    "notificationsSection": "Varsler",
+    "notificationsLater": "Varselinnstillinger kommer snart",
+    "peopleSection": "Personer",
+    "followRequests": "Følgeforespørsler",
+    "blockedUsers": "Blokkerte brukere",
+    "accountSection": "Konto",
+    "signOut": "Logg ut",
+    "deleteAccount": "Slett konto",
+    "saveError": "Kunne ikke lagre innstillingen. Prøv igjen."
+  },
+  "followRequests": {
+    "title": "Følgeforespørsler",
+    "accept": "Godkjenn",
+    "decline": "Avslå",
+    "acceptFor": "Godkjenn {{name}}",
+    "declineFor": "Avslå {{name}}",
+    "emptyTitle": "Ingen forespørsler",
+    "emptyBody": "Nye forespørsler vises her når du har en privat profil."
+  },
+  "blocked": {
+    "title": "Blokkerte brukere",
+    "unblock": "Opphev blokkering",
+    "unblockFor": "Opphev blokkering av {{name}}",
+    "emptyTitle": "Ingen blokkerte brukere",
+    "emptyBody": "Brukere du blokkerer vises her."
+  },
+  "deleteAccount": {
+    "title": "Slett konto",
+    "warning": "Kontoen din og alt du har lagt ut slettes. Dette kan ikke angres. Brukernavnet ditt blir ledig for andre.",
+    "typeUsername": "Skriv brukernavnet ditt ({{username}}) for å bekrefte",
+    "usernameLabel": "Brukernavn",
+    "confirm": "Slett kontoen min",
+    "deleting": "Sletter …",
+    "reauthTitle": "Logg inn på nytt",
+    "reauthBody": "Av sikkerhetshensyn må du ha logget inn de siste 10 minuttene for å slette kontoen.",
+    "reauthButton": "Logg inn på nytt",
+    "error": "Kunne ikke slette kontoen. Prøv igjen."
   }
 }
