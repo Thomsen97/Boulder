@@ -84,6 +84,17 @@ describe("edit profile (PROF-1, AUTH-4)", () => {
     await waitFor(() => expect(back).toHaveBeenCalled());
   });
 
+  it("does not lock the username when only the display name changes", async () => {
+    await renderWithProviders(<EditProfileScreen />);
+    await fireEvent.changeText(await screen.findByLabelText("Navn"), "Nytt Navn");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Lagre" })).toBeEnabled());
+    await fireEvent.press(screen.getByRole("button", { name: "Lagre" }));
+
+    await waitFor(() => expect(getDb().me.displayName).toBe("Nytt Navn"));
+    expect(getDb().me.usernameChangedAt).toBeNull();
+    expect(screen.queryByText(/Du kan bytte brukernavn igjen/)).toBeNull();
+  });
+
   it("limits the bio to 160 characters", async () => {
     await renderWithProviders(<EditProfileScreen />);
     await fireEvent.changeText(await screen.findByLabelText("Bio"), "x".repeat(161));
