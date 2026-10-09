@@ -21,11 +21,11 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        // Each screen draws its own heading; the native header has a fixed height and clips at large text sizes.
+        headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
       }}
     >
       {tabs.map(({ name, key, icon }) => (

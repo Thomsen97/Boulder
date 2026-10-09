@@ -135,6 +135,7 @@ Notes:
 - Dependencies beyond SPEC 8.2: `@expo/vector-icons` (tab icons), `expo-font` and `expo-asset` (peers of vector-icons), `react-dom` (optional peer of Expo), `expo-linking`, `expo-constants`, `react-native-screens`, `react-native-safe-area-context` (Expo Router requirements). Dev: `jest-expo`, `@testing-library/react-native`, `react-test-renderer`, `eslint-config-expo`, `prettier`, `openapi-typescript`, `@types/jest`.
 - Tests sit next to the code (`*.test.ts(x)`) per architecture 6. `app.config.test.ts` and `tabs.test.tsx` are at the project root because files inside `app/` would become routes; `expo lint` covers only `src` and `app`, so those two are not linted (typecheck covers them).
 - Typography tokens have no fixed `lineHeight`: at the largest iOS text size a fixed value clipped the titles (found in the manual check), so line height now follows the scaled font.
+- The native tab header is hidden (`headerShown: false`) because its fixed height clipped the title at the largest text size; placeholder screens draw their own heading inside a safe-area-aware `ScrollView`.
 - `tsconfig.json` has `"types": ["jest"]` (TypeScript 6 no longer includes `@types/*` automatically), so Jest globals also type-check in app code. Accepted; a separate test tsconfig is a possible follow-up.
 - Phase 0 was set to Done in this PR because its PR was already merged and the docs were stale (confirmed by Sebastian).
 - `EXPO_PUBLIC_*` variables are documented in `apps/mobile/.env.example`, because Expo only reads `.env` from the app folder.
