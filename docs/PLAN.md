@@ -34,7 +34,7 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 | # | Phase | Tag | Depends on | Status |
 |---|---|---|---|---|
 | 0 | API foundation and CI | B1 | none | Done |
-| 1 | Mobile foundation | B1 | 0 | In review |
+| 1 | Mobile foundation | B1 | 0 | Done |
 | 2 | UI: onboarding, profile, settings | B1 | 1 | Not started |
 | 3 | API: authentication, users, onboarding | B1 | 0 | Not started |
 | 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
