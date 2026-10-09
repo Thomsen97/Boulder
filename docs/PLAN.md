@@ -174,6 +174,7 @@ Notes:
 - New dependencies: `react-hook-form`, `zod`, `@hookform/resolvers` (forms and validation, SPEC 8.2), `zustand` (the mock session, SPEC 8.2). Dev only: `@babel/parser` and `@babel/traverse` (version 7, because Jest cannot load version 8) for the `no-literals.test.ts` scan, and `@types/node` for it.
 - Review round 1 decisions: `MockProfilesSection` reads the mock database directly, which is an exception to "screens only use hooks" (architecture 4.2); it is mock-only and goes away with the mock layer in phase 5. The follow-request and blocked lists are plain lists in a `ScrollView`, not FlashList (architecture 4.5); they stay short at beta size, and the feeds in phase 13 use FlashList. Open question for Sebastian: the welcome screen shows "Fortsett med Apple" on every platform; AUTH-1 does not say whether Android gets it, so phase 4 decides. `DeleteAccountScreen` checks the 10-minute sign-in only when it opens; the server enforces DEL-1 later (phase 21).
 - Review round 2: the router tests render the whole route tree and need more than the default Jest timeout on a cold cache (`testTimeout: 30000`). The string-literal scan covers `.tsx` files only; `.ts` files produce i18n keys, which `i18n.test.ts` checks. The mock starts with no follow requests; they arrive when the profile becomes private.
+- Dependabot broke `main` (CI red since PRs #8 and #9) and the merge with `main` conflicted for the same reason. Resolved here: the mobile bump (React 19.3, React Native 0.87, jest 30, eslint 10, TypeScript 7, safe-area-context and screens) cannot be installed with Expo SDK 57 (ERESOLVE) and is reverted to the versions Expo SDK 57 expects; `Microsoft.OpenApi` 3.10.2 breaks the `Microsoft.AspNetCore.OpenApi` source generator (CS0200) and is pinned back to 2.12.0. The test-tool bumps (coverlet, Test SDK, xunit runner) are kept and pass. Follow-up for Sebastian: tell Dependabot to ignore the Expo-managed npm packages (react, react-dom, react-native, react-test-renderer, @types/react, jest, typescript, eslint and anything `expo install --check` pins) and `Microsoft.OpenApi`, and take those upgrades together with the next Expo SDK upgrade.
 - Follow-up: console output of the tests contains React `act()` warnings from mutations and refetches finishing after a test step. They do not fail tests; a quieter setup can come later.
 
 ---
@@ -223,6 +224,7 @@ Done when:
 - [ ] `README.md` documents the setup; no keys in git
 
 Notes:
+- Decided with Sebastian during phase 2: show "Fortsett med Apple" on iOS only (Sign in with Apple is required there because Google is offered; Android gets Google and e-post). The phase 2 welcome screen currently shows it on every platform.
 
 ---
 
