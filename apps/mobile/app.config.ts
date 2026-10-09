@@ -22,7 +22,6 @@ const config: ExpoConfig = {
     },
   },
   plugins: ["expo-router", "expo-localization"],
-  experiments: { typedRoutes: true },
 };
 
 export default config;

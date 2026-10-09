@@ -35,7 +35,7 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 |---|---|---|---|---|
 | 0 | API foundation and CI | B1 | none | Done |
 | 1 | Mobile foundation | B1 | 0 | Done |
-| 2 | UI: onboarding, profile, settings | B1 | 1 | Not started |
+| 2 | UI: onboarding, profile, settings | B1 | 1 | In review |
 | 3 | API: authentication, users, onboarding | B1 | 0 | Not started |
 | 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
 | 5 | Social graph: follows, blocks, search | B1 | 4 | Not started |
@@ -151,13 +151,31 @@ Notes:
 Screens: welcome/sign-in (buttons only), onboarding (username with live availability check, display name, avatar placeholder, 16+ checkbox, guidelines), own profile, other user's profile, edit profile, settings (private profile, "Del loggene mine", "Skjul beta" with three modes, notification placeholder, "Slett konto" flow), follow requests, blocked users.
 
 Done when:
-- [ ] Every screen is reachable and has loading, empty and error states
-- [ ] Username validation follows AUTH-4 (unit tests)
-- [ ] Component tests: profile renders correctly as own, public other, private other not followed, pending request, followed, blocked
-- [ ] No user-visible string literals outside `nb.json`
-- [ ] Standard checks green
+- [x] Every screen is reachable and has loading, empty and error states
+- [x] Username validation follows AUTH-4 (unit tests)
+- [x] Component tests: profile renders correctly as own, public other, private other not followed, pending request, followed, blocked
+- [x] No user-visible string literals outside `nb.json`
+- [x] Standard checks green
 
 Notes:
+- Manual walk-through done by Sebastian on an iPhone in Expo Go (all steps looked fine). Steps, for reference: iPhone in Expo Go (`npx expo start` in `apps/mobile`). Every screen is also opened by URL in `reachability.test.tsx`, so the walk-through only checks look and feel and that the buttons lead to the right screens:
+  1. Fresh start: the welcome screen shows three sign-in buttons. Tap any: onboarding opens (the sign-in is fake).
+  2. Onboarding: type `emma` (taken), `ab` (too short), `1abc`, `admin`; see the message under the field each time. Type `klatrer1`, wait for "Brukernavnet er ledig". The "Kom i gang" button stays disabled until name, age box and guidelines box are done. Finish: the five tabs open.
+  3. Profil tab: your own profile with "Rediger profil" and a settings icon. Open Rediger profil, change name and bio, save. Change the username once; after saving, the username field is locked for 30 days.
+  4. Innstillinger: toggle "Privat profil" on (no confirmation), open "Følgeforespørsler" (requests only exist for a private profile): accept one, decline one, the list becomes empty; tap a row to open that profile. Toggle "Privat profil" off again: a confirmation appears. Toggle "Del loggene mine" and pick each "Skjul beta" mode. Open "Blokkerte brukere" and unblock Trollet: the list becomes empty.
+  5. Other profiles (no search yet): Innstillinger > "Eksempelprofiler (testversjon)" lists them, and the rows in Følgeforespørsler also open a profile. emma follow/unfollow (public), kari "Be om å følge" (private, content hidden), nina shows "Forespørsel sendt" with a cancel button, jonas "Følger", ola followed and public, Trollet (blocked) and "Bruker som ikke finnes" both show "Fant ikke brukeren". Block someone from a profile and confirm the profile then shows "Fant ikke brukeren" and the person is listed under Blokkerte brukere.
+  6. Large text: set Larger Text to the maximum and walk through the screens above; nothing may be cut off.
+  7. Slett konto: type the username, confirm. You are back at the welcome screen and a new sign-in starts a fresh onboarding.
+  8. Optional, to see the states: put `EXPO_PUBLIC_MOCK_SCENARIO=error` in `apps/mobile/.env` and restart Expo. After sign-in the app shows "Noe gikk galt" with "Prøv igjen" (the profile cannot load, so nothing can be routed). Per-screen error states, and cached data staying visible when a refresh fails, are covered by tests (`SettingsScreen.test.tsx`, `SocialScreens.test.tsx`, `StateView.test.tsx`, `reachability.test.tsx`). `EXPO_PUBLIC_MOCK_DELAY_MS=3000` makes the loading states last 3 seconds.
+- Mock layer: `src/lib/mock/db.ts` is the shared in-memory backend, `src/lib/mock/control.ts` adds delay and failure. `ProfileApi` and `SocialApi` have only mock implementations; phases 3 and 5 add the live ones and the mode switch (as `health` already has). Types in `src/features/profile/types.ts` follow SPEC 12.1 and will be replaced by the generated API types.
+- Interpretations (SPEC is silent or ambiguous): display name is 1 to 50 characters; blocked and missing users both show "Fant ikke brukeren" (SAFE-1, 5.6); going from private to public asks for confirmation, the other direction does not; the stats area and the post list are empty placeholders until the feed phases (PROF-1, PROF-7); the avatar is an initials placeholder until phase 11; "Logg ut" is added to settings so the sign-in flow can be tested; the guidelines text (SPEC 3.4) is my draft and needs Sebastian's review; the accepted version is `GUIDELINES_VERSION` in `src/features/profile/guidelines.ts`.
+- No new API: `api/openapi/v1.json` and the generated types are unchanged. The username availability rate limit (30 per minute, SEC-6) is a server concern and is not simulated.
+- Typed routes (`experiments.typedRoutes`) are removed from `app.config.ts`: the local generator treated the whole project folder as the routes root and produced types that rejected valid paths. CI never generated them, so type checking there is unchanged.
+- New dependencies: `react-hook-form`, `zod`, `@hookform/resolvers` (forms and validation, SPEC 8.2), `zustand` (the mock session, SPEC 8.2). Dev only: `@babel/parser` and `@babel/traverse` (version 7, because Jest cannot load version 8) for the `no-literals.test.ts` scan, and `@types/node` for it.
+- Review round 1 decisions: `MockProfilesSection` reads the mock database directly, which is an exception to "screens only use hooks" (architecture 4.2); it is mock-only and goes away with the mock layer in phase 5. The follow-request and blocked lists are plain lists in a `ScrollView`, not FlashList (architecture 4.5); they stay short at beta size, and the feeds in phase 13 use FlashList. Open question for Sebastian: the welcome screen shows "Fortsett med Apple" on every platform; AUTH-1 does not say whether Android gets it, so phase 4 decides. `DeleteAccountScreen` checks the 10-minute sign-in only when it opens; the server enforces DEL-1 later (phase 21).
+- Review round 2: the router tests render the whole route tree and need more than the default Jest timeout on a cold cache (`testTimeout: 30000`). The string-literal scan covers `.tsx` files only; `.ts` files produce i18n keys, which `i18n.test.ts` checks. The mock starts with no follow requests; they arrive when the profile becomes private.
+- Dependabot broke `main` (CI red since PRs #8 and #9) and the merge with `main` conflicted for the same reason. Resolved here: the mobile bump (React 19.3, React Native 0.87, jest 30, eslint 10, TypeScript 7, safe-area-context and screens) cannot be installed with Expo SDK 57 (ERESOLVE) and is reverted to the versions Expo SDK 57 expects; `Microsoft.OpenApi` 3.10.2 breaks the `Microsoft.AspNetCore.OpenApi` source generator (CS0200) and is pinned back to 2.12.0. The test-tool bumps (coverlet, Test SDK, xunit runner) are kept and pass. Follow-up for Sebastian: tell Dependabot to ignore the Expo-managed npm packages (react, react-dom, react-native, react-test-renderer, @types/react, jest, typescript, eslint and anything `expo install --check` pins) and `Microsoft.OpenApi`, and take those upgrades together with the next Expo SDK upgrade.
+- Follow-up: console output of the tests contains React `act()` warnings from mutations and refetches finishing after a test step. They do not fail tests; a quieter setup can come later.
 
 ---
 
@@ -206,6 +224,7 @@ Done when:
 - [ ] `README.md` documents the setup; no keys in git
 
 Notes:
+- Decided with Sebastian during phase 2: show "Fortsett med Apple" on iOS only (Sign in with Apple is required there because Google is offered; Android gets Google and e-post). The phase 2 welcome screen currently shows it on every platform.
 
 ---
 
