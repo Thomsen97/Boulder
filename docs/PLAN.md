@@ -120,7 +120,7 @@ Tasks:
 - CI job: lint, typecheck, test, type-generation drift check.
 
 Done when:
-- [ ] The app starts in Expo Go on Android (checked on iOS, see Notes) and shows the five tabs with labels from `nb.json`
+- [x] The app starts in Expo Go on Android (checked on iOS by Sebastian, see Notes) and shows the five tabs with labels from `nb.json`
 - [x] `npm run lint`, `npm run typecheck` and `npm test` are green locally and in CI
 - [x] `npm run api:types` regenerates types; CI fails when the committed types differ
 - [x] A test proves a sample feature works through the same interface in mock and live mode (live mocked at fetch level)
@@ -128,13 +128,13 @@ Done when:
 
 Notes:
 
-- Manual check pending (Sebastian): Expo Go on a device. Sebastian has an iPhone with Expo Go, so the check runs on iOS instead of Android. Steps: in `apps/mobile` run `npx expo start`, scan the QR code with the iPhone camera, and confirm the tab bar shows Hjem, Grupper, Gym, Varsler, Profil and each tab shows its Norwegian placeholder text. The Hjem tab also shows "Server: Tilkoblet" (mock mode).
+- Manual check done by Sebastian on an iPhone in Expo Go: five tabs, Norwegian labels, "Server: Tilkoblet", and no clipping at the largest text size after the typography fixes below. Original plan: Sebastian has an iPhone with Expo Go, so the check runs on iOS instead of Android. Steps: in `apps/mobile` run `npx expo start`, scan the QR code with the iPhone camera, and confirm the tab bar shows Hjem, Grupper, Gym, Varsler, Profil and each tab shows its Norwegian placeholder text. The Hjem tab also shows "Server: Tilkoblet" (mock mode).
 - `/health` was a plain health-check endpoint and did not appear in the OpenAPI document. It is now a minimal API endpoint (`GetHealth`, text/plain 200 and 503), so the generated types contain a real path. `v1.json` was regenerated. Existing integration tests still pass.
 - Expo Go is used for phase 1 because no custom native modules are needed yet. SPEC 8.2 (development builds) applies from the first phase that adds a native module.
 - Peer dependency conflicts with Expo SDK 57 / TypeScript 6 / npm 12: `overrides` in `package.json` lets `openapi-typescript` (peer `typescript@^5`) use the project's TypeScript, and `react-dom` is pinned to 19.2.3 to match React. `expo install` fails under npm 12 (`--allow-scripts`), so packages were installed with `npm install` and verified with `npx expo install --check`.
 - Dependencies beyond SPEC 8.2: `@expo/vector-icons` (tab icons), `expo-font` and `expo-asset` (peers of vector-icons), `react-dom` (optional peer of Expo), `expo-linking`, `expo-constants`, `react-native-screens`, `react-native-safe-area-context` (Expo Router requirements). Dev: `jest-expo`, `@testing-library/react-native`, `react-test-renderer`, `eslint-config-expo`, `prettier`, `openapi-typescript`, `@types/jest`.
 - Tests sit next to the code (`*.test.ts(x)`) per architecture 6. `app.config.test.ts` and `tabs.test.tsx` are at the project root because files inside `app/` would become routes; `expo lint` covers only `src` and `app`, so those two are not linted (typecheck covers them).
-- Typography tokens have no fixed `lineHeight`: at the largest iOS text size a fixed value clipped the titles (found in the manual check), so line height now follows the scaled font.
+- Typography uses `useTypography()` in `src/theme`: line height is computed from the current font scale. A fixed `lineHeight` clipped titles at the largest iOS text size, and leaving it unset made lines overlap (both found in the manual check on an iPhone).
 - The native tab header is hidden (`headerShown: false`) because its fixed height clipped the title at the largest text size; placeholder screens draw their own heading inside a safe-area-aware `ScrollView`.
 - `tsconfig.json` has `"types": ["jest"]` (TypeScript 6 no longer includes `@types/*` automatically), so Jest globals also type-check in app code. Accepted; a separate test tsconfig is a possible follow-up.
 - Phase 0 was set to Done in this PR because its PR was already merged and the docs were stale (confirmed by Sebastian).

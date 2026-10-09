@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ScrollView, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { spacing, typography, useColors } from "@/theme";
+import { spacing, useColors, useTypography } from "@/theme";
 
 export function PlaceholderScreen({
   title,
@@ -14,6 +14,7 @@ export function PlaceholderScreen({
   children?: ReactNode;
 }) {
   const colors = useColors();
+  const typography = useTypography();
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
