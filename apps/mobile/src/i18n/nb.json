@@ -1,0 +1,22 @@
+{
+  "tabs": {
+    "home": "Hjem",
+    "groups": "Grupper",
+    "gym": "Gym",
+    "notifications": "Varsler",
+    "profile": "Profil"
+  },
+  "placeholder": {
+    "home": "Her kommer hjem-feeden.",
+    "groups": "Her kommer gruppene dine.",
+    "gym": "Her kommer gymmet.",
+    "notifications": "Her kommer varslene dine.",
+    "profile": "Her kommer profilen din."
+  },
+  "health": {
+    "label": "Server",
+    "loading": "Sjekker tilkobling …",
+    "ok": "Tilkoblet",
+    "error": "Ingen kontakt med serveren"
+  }
+}

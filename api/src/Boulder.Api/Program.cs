@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Boulder.Api.Errors;
 using Boulder.Infrastructure;
 using Scalar.AspNetCore;
@@ -45,7 +46,19 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.MapHealthChecks("/health");
+app.MapGet("/health", async (HealthCheckService health, CancellationToken ct) =>
+    {
+        var report = await health.CheckHealthAsync(ct);
+        return Results.Text(
+            report.Status.ToString(),
+            "text/plain",
+            statusCode: report.Status == HealthStatus.Unhealthy
+                ? StatusCodes.Status503ServiceUnavailable
+                : StatusCodes.Status200OK);
+    })
+    .WithName("GetHealth")
+    .Produces<string>(StatusCodes.Status200OK, "text/plain")
+    .Produces<string>(StatusCodes.Status503ServiceUnavailable, "text/plain");
 
 if (args.Contains("--export-openapi"))
 {

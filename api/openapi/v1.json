@@ -4,5 +4,41 @@
     "title": "Boulder.Api | v1",
     "version": "1.0.0"
   },
-  "paths": {}
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Boulder.Api"
+        ],
+        "operationId": "GetHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Boulder.Api"
+    }
+  ]
 }

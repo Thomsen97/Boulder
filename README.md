@@ -10,7 +10,7 @@ Mobile social hub for bouldering friend groups — Expo (React Native) app, ASP.
 | Docker Desktop | latest | Required for local Postgres and integration tests (Testcontainers) |
 | Git | any | |
 | GitHub CLI (`gh`) | any | `gh auth login` before working with PRs |
-| Node.js LTS | 20+ | Required from phase 1 for the mobile app |
+| Node.js LTS | 22+ | Mobile app (`apps/mobile`); CI uses 24 |
 
 ## Local API setup (Windows)
 
@@ -58,6 +58,21 @@ dotnet test api/Boulder.sln
 # Export the OpenAPI document (requires Postgres running; run from repo root)
 dotnet run --project api/src/Boulder.Api -- --export-openapi --output-path "$(pwd)/api/openapi/v1.json"
 ```
+
+## Mobile app setup
+
+From `apps/mobile`:
+
+```sh
+npm ci
+npx expo start        # scan the QR code with Expo Go (phase 1 uses no custom native modules)
+npm run lint
+npm run typecheck
+npm test
+npm run api:types     # regenerate src/lib/api/schema.d.ts from api/openapi/v1.json
+```
+
+The app reads two optional variables (copy `apps/mobile/.env.example` to `apps/mobile/.env`; Expo only reads `.env` from that folder): `EXPO_PUBLIC_API_MODE` (`mock`, `live` or a list such as `live,groups:mock`; default `mock`) and `EXPO_PUBLIC_API_URL`. A phone cannot reach `localhost` on the PC; use the PC's LAN address for live mode.
 
 ## Adding a migration
 
