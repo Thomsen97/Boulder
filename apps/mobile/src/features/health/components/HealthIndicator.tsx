@@ -5,7 +5,7 @@ import { typography, useColors } from "@/theme";
 
 import { useHealth } from "../hooks";
 
-export function HealthStatus() {
+export function HealthIndicator() {
   const { t } = useTranslation();
   const colors = useColors();
   const { data, isPending, isError } = useHealth();

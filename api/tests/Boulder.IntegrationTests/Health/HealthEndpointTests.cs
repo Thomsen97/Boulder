@@ -16,6 +16,8 @@ public class HealthEndpointTests(BoulderWebApplicationFactory factory)
         var client = factory.CreateClient();
         var response = await client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -25,6 +27,8 @@ public class HealthEndpointTests(BoulderWebApplicationFactory factory)
         var client = unhealthyFactory.CreateClient();
         var response = await client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("Unhealthy", await response.Content.ReadAsStringAsync());
     }
 
     // Factory with no running DB; Timeout=1 keeps the test fast.

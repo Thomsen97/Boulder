@@ -10,7 +10,7 @@ Mobile social hub for bouldering friend groups — Expo (React Native) app, ASP.
 | Docker Desktop | latest | Required for local Postgres and integration tests (Testcontainers) |
 | Git | any | |
 | GitHub CLI (`gh`) | any | `gh auth login` before working with PRs |
-| Node.js LTS | 20+ | Mobile app (`apps/mobile`) |
+| Node.js LTS | 22+ | Mobile app (`apps/mobile`); CI uses 24 |
 
 ## Local API setup (Windows)
 
@@ -72,7 +72,7 @@ npm test
 npm run api:types     # regenerate src/lib/api/schema.d.ts from api/openapi/v1.json
 ```
 
-The app reads two optional variables (see `.env.example`): `EXPO_PUBLIC_API_MODE` (`mock`, `live` or a list such as `live,groups:mock`; default `mock`) and `EXPO_PUBLIC_API_URL`. A phone cannot reach `localhost` on the PC; use the PC's LAN address for live mode.
+The app reads two optional variables (copy `apps/mobile/.env.example` to `apps/mobile/.env`; Expo only reads `.env` from that folder): `EXPO_PUBLIC_API_MODE` (`mock`, `live` or a list such as `live,groups:mock`; default `mock`) and `EXPO_PUBLIC_API_URL`. A phone cannot reach `localhost` on the PC; use the PC's LAN address for live mode.
 
 ## Adding a migration
 

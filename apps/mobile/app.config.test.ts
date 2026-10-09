@@ -1,4 +1,4 @@
-import config from "../app.config";
+import config from "./app.config";
 
 describe("app.config", () => {
   it("uses the agreed identifiers and deep link scheme", () => {

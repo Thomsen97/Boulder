@@ -1,14 +1,14 @@
 {
   "name": "boulder-mobile",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo/vector-icons": "^15.1.1",
+    "@expo/vector-icons": "~15.1.1",
     "@tanstack/react-query": "^5.104.1",
     "expo": "~57.0.27",
-    "expo-asset": "^57.0.19",
+    "expo-asset": "~57.0.19",
     "expo-constants": "~57.0.21",
-    "expo-font": "^57.0.4",
+    "expo-font": "~57.0.4",
     "expo-linking": "~57.0.12",
     "expo-localization": "~57.0.2",
     "expo-router": "~57.0.25",
@@ -16,7 +16,7 @@
     "i18next": "^26.4.2",
     "openapi-fetch": "^0.17.0",
     "react": "19.2.3",
-    "react-dom": "^19.2.3",
+    "react-dom": "19.2.3",
     "react-i18next": "^17.0.16",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
@@ -49,5 +49,8 @@
     "openapi-typescript": {
       "typescript": "$typescript"
     }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -134,7 +134,11 @@ Notes:
 - Peer dependency conflicts with Expo SDK 57 / TypeScript 6 / npm 12: `overrides` in `package.json` lets `openapi-typescript` (peer `typescript@^5`) use the project's TypeScript, and `react-dom` is pinned to 19.2.3 to match React. `expo install` fails under npm 12 (`--allow-scripts`), so packages were installed with `npm install` and verified with `npx expo install --check`.
 - Dependencies beyond SPEC 8.2: `@expo/vector-icons` (tab icons), `expo-font` and `expo-asset` (peers of vector-icons), `react-dom` (optional peer of Expo), `expo-linking`, `expo-constants`, `react-native-screens`, `react-native-safe-area-context` (Expo Router requirements). Dev: `jest-expo`, `@testing-library/react-native`, `react-test-renderer`, `eslint-config-expo`, `prettier`, `openapi-typescript`, `@types/jest`.
 - `npm audit --omit=dev` reports transitive findings from Expo's own tooling dependencies; none come from direct dependencies. Follow-up: revisit when Expo ships a patch release.
-- `expo lint` only covers `src` and `app`; `__tests__` is covered by typecheck and prettier but not ESLint. Follow-up if wanted.
+- Tests sit next to the code (`*.test.ts(x)`) per architecture 6. `app.config.test.ts` and `tabs.test.tsx` are at the project root because files inside `app/` would become routes; `expo lint` covers only `src` and `app`, so those two are not linted (typecheck and prettier cover them).
+- `tsconfig.json` has `"types": ["jest"]` (TypeScript 6 no longer includes `@types/*` automatically), so Jest globals also type-check in app code. Accepted; a separate test tsconfig is a possible follow-up.
+- Phase 0 was set to Done in this PR because its PR was already merged and the docs were stale (confirmed by Sebastian).
+- `EXPO_PUBLIC_*` variables are documented in `apps/mobile/.env.example`, because Expo only reads `.env` from the app folder.
+- The `npm audit` findings are in packages from the Expo CLI and Metro tooling; I have not traced whether any ship in the runtime bundle. Follow-up: trace them when Expo publishes a patch release.
 
 ---
 
