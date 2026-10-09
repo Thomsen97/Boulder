@@ -34,7 +34,7 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 | # | Phase | Tag | Depends on | Status |
 |---|---|---|---|---|
 | 0 | API foundation and CI | B1 | none | Done |
-| 1 | Mobile foundation | B1 | 0 | In progress |
+| 1 | Mobile foundation | B1 | 0 | In review |
 | 2 | UI: onboarding, profile, settings | B1 | 1 | Not started |
 | 3 | API: authentication, users, onboarding | B1 | 0 | Not started |
 | 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
@@ -120,13 +120,21 @@ Tasks:
 - CI job: lint, typecheck, test, type-generation drift check.
 
 Done when:
-- [ ] The app starts in Expo Go on Android and shows the five tabs with labels from `nb.json`
-- [ ] `npm run lint`, `npm run typecheck` and `npm test` are green locally and in CI
-- [ ] `npm run api:types` regenerates types; CI fails when the committed types differ
-- [ ] A test proves a sample feature works through the same interface in mock and live mode (live mocked at fetch level)
-- [ ] `app.config.ts` contains `no.swthomsen.boulder` and scheme `boulder`
+- [ ] The app starts in Expo Go on Android (checked on iOS, see Notes) and shows the five tabs with labels from `nb.json`
+- [x] `npm run lint`, `npm run typecheck` and `npm test` are green locally and in CI
+- [x] `npm run api:types` regenerates types; CI fails when the committed types differ
+- [x] A test proves a sample feature works through the same interface in mock and live mode (live mocked at fetch level)
+- [x] `app.config.ts` contains `no.swthomsen.boulder` and scheme `boulder`
 
 Notes:
+
+- Manual check pending (Sebastian): Expo Go on a device. Sebastian has an iPhone with Expo Go, so the check runs on iOS instead of Android. Steps: in `apps/mobile` run `npx expo start`, scan the QR code with the iPhone camera, and confirm the tab bar shows Hjem, Grupper, Gym, Varsler, Profil and each tab shows its Norwegian placeholder text. The Hjem tab also shows "Server: Tilkoblet" (mock mode).
+- `/health` was a plain health-check endpoint and did not appear in the OpenAPI document. It is now a minimal API endpoint (`GetHealth`, text/plain 200 and 503), so the generated types contain a real path. `v1.json` was regenerated. Existing integration tests still pass.
+- Expo Go is used for phase 1 because no custom native modules are needed yet. SPEC 8.2 (development builds) applies from the first phase that adds a native module.
+- Peer dependency conflicts with Expo SDK 57 / TypeScript 6 / npm 12: `overrides` in `package.json` lets `openapi-typescript` (peer `typescript@^5`) use the project's TypeScript, and `react-dom` is pinned to 19.2.3 to match React. `expo install` fails under npm 12 (`--allow-scripts`), so packages were installed with `npm install` and verified with `npx expo install --check`.
+- Dependencies beyond SPEC 8.2: `@expo/vector-icons` (tab icons), `expo-font` and `expo-asset` (peers of vector-icons), `react-dom` (optional peer of Expo), `expo-linking`, `expo-constants`, `react-native-screens`, `react-native-safe-area-context` (Expo Router requirements). Dev: `jest-expo`, `@testing-library/react-native`, `react-test-renderer`, `eslint-config-expo`, `prettier`, `openapi-typescript`, `@types/jest`.
+- `npm audit --omit=dev` reports transitive findings from Expo's own tooling dependencies; none come from direct dependencies. Follow-up: revisit when Expo ships a patch release.
+- `expo lint` only covers `src` and `app`; `__tests__` is covered by typecheck and prettier but not ESLint. Follow-up if wanted.
 
 ---
 
