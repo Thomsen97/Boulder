@@ -8,10 +8,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Boulder.Infrastructure.Migrations
+namespace Boulder.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BoulderDbContext))]
-    [Migration("20261009113111_InitialCreate")]
+    [Migration("20261009124904_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

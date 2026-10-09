@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Boulder.Infrastructure.Migrations
+namespace Boulder.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

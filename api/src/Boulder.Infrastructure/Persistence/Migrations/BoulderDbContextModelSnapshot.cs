@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Boulder.Infrastructure.Migrations
+namespace Boulder.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BoulderDbContext))]
     partial class BoulderDbContextModelSnapshot : ModelSnapshot

@@ -12,4 +12,5 @@ public static class ErrorCodes
     public const string StorageQuotaExceeded = "storage_quota_exceeded";
     public const string MediaNotReady = "media_not_ready";
     public const string DuplicateClientId = "duplicate_client_id";
+    public const string InternalError = "internal_error";
 }

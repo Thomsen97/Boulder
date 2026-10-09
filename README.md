@@ -55,8 +55,8 @@ dotnet build api/Boulder.sln
 # Run all tests (requires Docker Desktop for integration tests)
 dotnet test api/Boulder.sln
 
-# Export the OpenAPI document (requires Postgres running)
-dotnet run --project api/src/Boulder.Api -- --export-openapi --output-path api/openapi/v1.json
+# Export the OpenAPI document (requires Postgres running; run from repo root)
+dotnet run --project api/src/Boulder.Api -- --export-openapi --output-path "$(pwd)/api/openapi/v1.json"
 ```
 
 ## Adding a migration
@@ -87,6 +87,6 @@ docs/                      SPEC.md, PLAN.md, architecture.md, ADRs
 
 ## Environment variables
 
-Copy `.env.example` to `.env` and fill in the values. `.env` is git-ignored and must never be committed.
+`.env.example` documents every variable the application reads. `.env` is git-ignored and must never be committed.
 
-See `.env.example` for all supported variables. The only required one for local development is `ConnectionStrings__Default`, which is already set in `appsettings.Development.json` to match the docker-compose defaults.
+For local development `ConnectionStrings__Default` is already set in `appsettings.Development.json` to match the docker-compose defaults, so no `.env` file is needed for the API. The other variables (Supabase, Cloudflare R2, etc.) are used by the production deployment and by later phases; see `.env.example` for details.

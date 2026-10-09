@@ -1,5 +1,5 @@
-using Boulder.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using Boulder.Api.Errors;
+using Boulder.Infrastructure;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -17,8 +17,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 
-builder.Services.AddDbContext<BoulderDbContext>(options =>
-    options.UseNpgsql(connectionString));
+builder.Services.AddPersistence(connectionString);
 
 builder.Services
     .AddHealthChecks()
@@ -26,7 +25,12 @@ builder.Services
 
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions.TryAdd("code", MapStatusToCode(ctx.HttpContext.Response.StatusCode));
+        ctx.ProblemDetails.Extensions.TryAdd("traceId", ctx.HttpContext.TraceIdentifier);
+    });
 
 var app = builder.Build();
 
@@ -51,12 +55,11 @@ if (args.Contains("--export-openapi"))
     client.BaseAddress = new Uri(baseUrl);
     var rawJson = await client.GetStringAsync("/openapi/v1.json");
 
-    // Remove dynamic server URLs so the committed file is stable across environments
+    // Remove dynamic server URLs and normalize to LF so the committed file is byte-stable
     var node = System.Text.Json.Nodes.JsonNode.Parse(rawJson)!;
     node.AsObject().Remove("servers");
-    var json = node.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    var json = node.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, NewLine = "\n" });
 
-    // Resolve output path: either explicit --output-path arg or default relative to solution root
     var outputIndex = Array.IndexOf(args, "--output-path");
     var outputPath = outputIndex >= 0 && outputIndex + 1 < args.Length
         ? args[outputIndex + 1]
@@ -64,12 +67,21 @@ if (args.Contains("--export-openapi"))
             AppContext.BaseDirectory, "..", "..", "..", "..", "..", "openapi", "v1.json"));
 
     Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
-    await File.WriteAllTextAsync(outputPath, json);
+    await File.WriteAllTextAsync(outputPath, json + "\n");
     Log.Information("OpenAPI document written to {Path}", outputPath);
     await app.StopAsync();
     return;
 }
 
 app.Run();
+
+static string MapStatusToCode(int status) => status switch
+{
+    400 => ErrorCodes.ValidationFailed,
+    403 => ErrorCodes.Forbidden,
+    404 => ErrorCodes.NotFound,
+    409 => ErrorCodes.Conflict,
+    _ => ErrorCodes.InternalError
+};
 
 public partial class Program { }
