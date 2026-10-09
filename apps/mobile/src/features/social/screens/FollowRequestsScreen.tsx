@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { spacing } from "@/theme";
-import { Avatar, AsyncView, Button, ListRow, Screen } from "@/theme/components";
+import { Avatar, AsyncView, Button, ErrorText, ListRow, Screen } from "@/theme/components";
 
 import { useAcceptFollowRequest, useDeclineFollowRequest, useFollowRequests } from "../hooks";
 
@@ -23,6 +23,7 @@ export function FollowRequestsScreen() {
       >
         {(requests) => (
           <View style={{ gap: spacing.md }}>
+            <ErrorText visible={accept.isError || decline.isError} />
             {requests.map((person) => (
               <View key={person.id} style={{ gap: spacing.sm }}>
                 <ListRow

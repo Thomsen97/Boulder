@@ -34,8 +34,11 @@ function AuthGate() {
     if (!signedIn) client.clear();
   }, [signedIn, client]);
 
-  if (signedIn && me.isPending) return <LoadingState />;
-  if (signedIn && me.isError) return <ErrorState onRetry={() => void me.refetch()} />;
+  // Only block the app while there is nothing to route by. A failed background refetch keeps the
+  // cached profile, so the user does not lose their place in the navigator.
+  if (signedIn && me.data === undefined) {
+    return me.isError ? <ErrorState onRetry={() => void me.refetch()} /> : <LoadingState />;
+  }
 
   const needsOnboarding = signedIn && !me.data?.onboardingComplete;
   const inApp = signedIn && !needsOnboarding;

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 
 import { spacing, useColors, useTypography } from "@/theme";
-import { Avatar, AsyncView, Button, Screen } from "@/theme/components";
+import { Avatar, AsyncView, Button, ErrorText, Screen } from "@/theme/components";
 
 import { useBlocks, useUnblock } from "../hooks";
 
@@ -23,6 +23,7 @@ export function BlockedUsersScreen() {
       >
         {(people) => (
           <View style={{ gap: spacing.md }}>
+            <ErrorText visible={unblock.isError} />
             {people.map((person) => (
               <View
                 key={person.id}

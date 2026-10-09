@@ -3,7 +3,8 @@ import { mockRequest, notFound } from "@/lib/mock/control";
 import { getDb, ownProfile, profileFor, resetMockDb } from "@/lib/mock/db";
 
 import type { ProfileApi } from "./api";
-import { normalizeUsername, validateUsername } from "./username";
+import { BIO_MAX, DISPLAY_NAME_MAX } from "./schemas";
+import { nextUsernameChangeAt, normalizeUsername, validateUsername } from "./username";
 
 export function createMockProfileApi(now: () => Date = () => new Date()): ProfileApi {
   return {
@@ -13,14 +14,32 @@ export function createMockProfileApi(now: () => Date = () => new Date()): Profil
       mockRequest(() => {
         const db = getDb();
         const next = { ...update };
+        if (next.displayName !== undefined) {
+          next.displayName = next.displayName.trim();
+          if (next.displayName.length < 1 || next.displayName.length > DISPLAY_NAME_MAX) {
+            throw new ApiError(400, "validation_failed");
+          }
+        }
+        if (next.bio !== undefined && next.bio.length > BIO_MAX) {
+          throw new ApiError(400, "validation_failed");
+        }
         if (next.username !== undefined) {
           next.username = normalizeUsername(next.username);
           if (next.username !== db.me.username) {
             if (!validateUsername(next.username).valid)
               throw new ApiError(400, "validation_failed");
             if (isTaken(next.username)) throw new ApiError(409, "username_taken");
+            // AUTH-4: at most one change per 30 days.
+            if (nextUsernameChangeAt(db.me.usernameChangedAt, now())) {
+              throw new ApiError(409, "username_change_too_soon");
+            }
             db.me.usernameChangedAt = now().toISOString();
           }
+        }
+        // 5.6: going public accepts every pending follow request.
+        if (next.isPrivate === false && db.me.isPrivate) {
+          db.incomingRequests.forEach((id) => db.followers.add(id));
+          db.incomingRequests.clear();
         }
         db.me = { ...db.me, ...next };
         return { ...db.me };

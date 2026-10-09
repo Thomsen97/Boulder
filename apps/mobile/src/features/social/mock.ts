@@ -28,11 +28,17 @@ export function createMockSocialApi(): SocialApi {
       }),
 
     listFollowRequests: () =>
-      mockRequest(() => [...getDb().incomingRequests].map((id) => toSummary(userById(id)))),
+      mockRequest(() => {
+        const db = getDb();
+        // Requests only exist for a private profile (PROF-3).
+        if (!db.me.isPrivate) return [];
+        return [...db.incomingRequests].map((id) => toSummary(userById(id)));
+      }),
 
     acceptFollowRequest: (userId) =>
       mockRequest(() => {
-        getDb().incomingRequests.delete(userId);
+        const db = getDb();
+        if (db.incomingRequests.delete(userId)) db.followers.add(userId);
       }),
 
     declineFollowRequest: (userId) =>
@@ -50,6 +56,7 @@ export function createMockSocialApi(): SocialApi {
         db.following.delete(userId);
         db.requested.delete(userId);
         db.incomingRequests.delete(userId);
+        db.followers.delete(userId);
         db.blocked.add(userId);
       }),
 

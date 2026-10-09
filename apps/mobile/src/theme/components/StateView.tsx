@@ -83,8 +83,44 @@ export function AsyncView<T>({
 }: AsyncViewProps<T>) {
   if (query.isPending) return <LoadingState />;
   if (query.isError) {
-    return errorOverride?.(query.error) ?? <ErrorState onRetry={() => void query.refetch()} />;
+    // Some errors are an answer in themselves (a 404) and replace even data loaded earlier.
+    const override = errorOverride?.(query.error);
+    if (override) return override;
+    if (query.data === undefined) return <ErrorState onRetry={() => void query.refetch()} />;
   }
-  if (isEmpty?.(query.data) && empty) return <MessageState {...empty} />;
-  return <>{children(query.data)}</>;
+  const content =
+    isEmpty?.(query.data as T) && empty ? <MessageState {...empty} /> : children(query.data as T);
+  // A failed refresh keeps showing what was loaded before, with a note and a retry.
+  if (query.isError) {
+    return (
+      <>
+        <RefreshFailed onRetry={() => void query.refetch()} />
+        {content}
+      </>
+    );
+  }
+  return <>{content}</>;
+}
+
+function RefreshFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <MessageState
+      title={t("common.refreshFailed")}
+      action={{ label: t("common.retry"), onPress: onRetry }}
+    />
+  );
+}
+
+/** Inline message for a failed action such as follow or block. */
+export function ErrorText({ visible }: { visible: boolean }) {
+  const { t } = useTranslation();
+  const colors = useColors();
+  const typography = useTypography();
+  if (!visible) return null;
+  return (
+    <Text accessibilityLiveRegion="polite" style={[typography.body, { color: colors.danger }]}>
+      {t("common.actionError")}
+    </Text>
+  );
 }

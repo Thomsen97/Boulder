@@ -1,5 +1,7 @@
-import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import { router } from "expo-router";
+import { act, fireEvent, renderRouter, screen, waitFor } from "expo-router/testing-library";
 
+import { mockControl } from "@/lib/mock/control";
 import { signInOnboarded } from "@/test/helpers";
 import { useSession } from "@/features/session/store";
 
@@ -34,27 +36,64 @@ describe("route guards", () => {
 describe("screens", () => {
   beforeEach(() => signInOnboarded());
 
+  // Each route is identified by the heading of its own screen, not by text other screens share.
   it.each([
     ["/", "Hjem"],
     ["/groups", "Grupper"],
     ["/gym", "Gym"],
     ["/notifications", "Varsler"],
-    ["/profile", "Test Testesen"],
+    ["/profile", "Profil"],
     ["/user/emma", "Emma Berg"],
     ["/edit-profile", "Rediger profil"],
     ["/settings", "Innstillinger"],
     ["/settings/follow-requests", "Følgeforespørsler"],
     ["/settings/blocked", "Blokkerte brukere"],
     ["/settings/delete-account", "Slett konto"],
-  ])("opens %s", async (url, text) => {
+  ])("opens %s", async (url, heading) => {
     await renderRouter("./app", { initialUrl: url });
 
-    expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("header", { name: heading })).toBeTruthy();
   });
 
   it("opens an unknown profile as 'not found'", async () => {
     await renderRouter("./app", { initialUrl: "/user/finnesikke" });
 
     expect(await screen.findByText("Fant ikke brukeren")).toBeTruthy();
+  });
+});
+
+describe("failed background refresh", () => {
+  afterEach(() => jest.useRealTimers());
+
+  it("keeps the navigator and the open screen when refetching the profile fails", async () => {
+    signInOnboarded();
+    await renderRouter("./app", { initialUrl: "/" });
+    expect((await screen.findAllByText("Hjem")).length).toBeGreaterThan(0);
+
+    // Make the cached profile stale, then let its refetch (and the one retry) fail.
+    jest.useFakeTimers({
+      now: Date.now() + 120_000,
+      doNotFake: [
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "setImmediate",
+        "clearImmediate",
+        "nextTick",
+        "queueMicrotask",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+        "performance",
+      ],
+    });
+    mockControl.failNext = 2;
+    await act(async () => {
+      router.push("/edit-profile");
+    });
+
+    await waitFor(() => expect(mockControl.failNext).toBe(0), { timeout: 4000 });
+    expect(await screen.findByRole("header", { name: "Rediger profil" })).toBeTruthy();
+    expect(screen.getByLabelText("Navn")).toBeTruthy();
   });
 });

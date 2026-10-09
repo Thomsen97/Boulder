@@ -5,7 +5,7 @@ import { Text, View } from "react-native";
 
 import { useBlock, useFollow, useUnfollow } from "@/features/social/hooks";
 import { spacing, useColors, useTypography } from "@/theme";
-import { Avatar, Button, ConfirmDialog, MessageState } from "@/theme/components";
+import { Avatar, Button, ConfirmDialog, ErrorText, MessageState } from "@/theme/components";
 
 import type { UserProfile } from "../types";
 
@@ -131,6 +131,7 @@ function OtherActions({ profile }: { profile: UserProfile }) {
         label={t("profile.block")}
         onPress={() => setConfirmingBlock(true)}
       />
+      <ErrorText visible={follow.isError || unfollow.isError || block.isError} />
       <ConfirmDialog
         visible={confirmingBlock}
         title={t("profile.blockConfirmTitle", { username: profile.username })}

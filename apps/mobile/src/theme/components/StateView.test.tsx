@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { fireEvent, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { renderWithProviders } from "@/test/helpers";
+import { createTestQueryClient, renderWithProviders, TestProviders } from "@/test/helpers";
 
 import { AsyncView } from "./StateView";
 
@@ -47,5 +47,27 @@ describe("AsyncView", () => {
     expect(await screen.findByText("Noe gikk galt")).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Prøv igjen" }));
     expect(await screen.findByText("ok")).toBeTruthy();
+  });
+
+  it("keeps showing loaded data with a note when a refresh fails", async () => {
+    const client = createTestQueryClient();
+    const load = jest
+      .fn<Promise<string[]>, []>()
+      .mockResolvedValueOnce(["old"])
+      .mockRejectedValueOnce(new Error("boom"));
+    await render(
+      <TestProviders client={client}>
+        <Probe load={load} />
+      </TestProviders>,
+    );
+    expect(await screen.findByText("old")).toBeTruthy();
+
+    await act(async () => {
+      await client.refetchQueries({ queryKey: ["probe"] });
+    });
+
+    expect(await screen.findByText("Kunne ikke oppdatere. Viser sist hentede data.")).toBeTruthy();
+    expect(screen.getByText("old")).toBeTruthy();
+    expect(screen.queryByText("Noe gikk galt")).toBeNull();
   });
 });

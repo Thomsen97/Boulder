@@ -3,14 +3,17 @@ import path from "path";
 
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
+import type { Expression } from "@babel/types";
 
 // CLAUDE.md rule 5: UI text lives only in src/i18n/nb.json. This scans every component and route
-// file and fails on user-visible string literals: JSX text, and literal values of props that
-// screen readers or users see.
+// file and fails on user-visible string literals: JSX text, and string values (also inside
+// ternaries, logical expressions and template literals) of props that users or screen readers see.
 
 const ROOTS = ["src", "app"];
 const USER_FACING_PROPS = new Set([
   "title",
+  "body",
+  "text",
   "label",
   "placeholder",
   "accessibilityLabel",
@@ -22,6 +25,7 @@ const USER_FACING_PROPS = new Set([
   "confirmLabel",
   "cancelLabel",
 ]);
+const letters = /\p{L}/u;
 
 function sourceFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -32,40 +36,62 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-function findLiterals(file: string): string[] {
-  const ast = parse(fs.readFileSync(file, "utf8"), {
-    sourceType: "module",
-    plugins: ["typescript", "jsx"],
-  });
+/** Every string that could be shown, found in an expression that is used as text. */
+function literalsIn(expression: Expression | null | undefined): string[] {
+  if (!expression) return [];
+  switch (expression.type) {
+    case "StringLiteral":
+      return [expression.value];
+    case "TemplateLiteral":
+      // Only the fixed parts between ${} count; a lone "@" before a variable is not text.
+      return expression.quasis.map((q) => q.value.cooked ?? "");
+    case "ConditionalExpression":
+      return [...literalsIn(expression.consequent), ...literalsIn(expression.alternate)];
+    case "LogicalExpression":
+      return [...literalsIn(expression.left), ...literalsIn(expression.right)];
+    case "ParenthesizedExpression":
+      return literalsIn(expression.expression);
+    default:
+      return [];
+  }
+}
+
+export function findLiterals(source: string, file: string): string[] {
+  const ast = parse(source, { sourceType: "module", plugins: ["typescript", "jsx"] });
   const found: string[] = [];
-  const letters = /\p{L}/u;
+  const report = (line: number | undefined, what: string, values: string[]) => {
+    for (const value of values) {
+      if (letters.test(value)) found.push(`${file}:${line}: ${what} "${value.trim()}"`);
+    }
+  };
 
   traverse(ast, {
     JSXText(p) {
-      if (letters.test(p.node.value))
-        found.push(`${p.node.loc?.start.line}: text "${p.node.value.trim()}"`);
+      report(p.node.loc?.start.line, "text", [p.node.value]);
     },
     JSXAttribute(p) {
       const name = p.node.name.type === "JSXIdentifier" ? p.node.name.name : "";
+      if (!USER_FACING_PROPS.has(name)) return;
       const value = p.node.value;
-      if (
-        USER_FACING_PROPS.has(name) &&
-        value?.type === "StringLiteral" &&
-        letters.test(value.value)
+      if (value?.type === "StringLiteral") {
+        report(p.node.loc?.start.line, name, [value.value]);
+      } else if (
+        value?.type === "JSXExpressionContainer" &&
+        value.expression.type !== "JSXEmptyExpression"
       ) {
-        found.push(`${p.node.loc?.start.line}: ${name}="${value.value}"`);
+        report(p.node.loc?.start.line, name, literalsIn(value.expression));
       }
     },
     JSXExpressionContainer(p) {
-      const parent = p.parent;
-      if (parent.type === "JSXElement" && p.node.expression.type === "StringLiteral") {
-        if (letters.test(p.node.expression.value)) {
-          found.push(`${p.node.loc?.start.line}: text {"${p.node.expression.value}"}`);
+      // {"text"} or {cond ? "a" : "b"} used as a child of an element.
+      if (p.parent.type === "JSXElement" || p.parent.type === "JSXFragment") {
+        if (p.node.expression.type !== "JSXEmptyExpression") {
+          report(p.node.loc?.start.line, "text", literalsIn(p.node.expression));
         }
       }
     },
   });
-  return found.map((entry) => `${file}:${entry}`);
+  return found;
 }
 
 describe("no user-visible string literals outside nb.json", () => {
@@ -76,19 +102,33 @@ describe("no user-visible string literals outside nb.json", () => {
   });
 
   it("finds no literal text in components or routes", () => {
-    expect(files.flatMap(findLiterals)).toEqual([]);
+    const found = files.flatMap((file) => findLiterals(fs.readFileSync(file, "utf8"), file));
+    expect(found).toEqual([]);
   });
 
-  it("detects literals (self-check of the scanner)", () => {
-    const sample = path.join(__dirname, "src", "test", "__sample_literal__.tsx");
-    fs.writeFileSync(
-      sample,
-      'export const A = () => <Text accessibilityLabel="Hei">Hallo</Text>;\n',
-    );
-    try {
-      expect(findLiterals(sample)).toHaveLength(2);
-    } finally {
-      fs.unlinkSync(sample);
-    }
+  describe("scanner self-check", () => {
+    const scan = (jsx: string) => findLiterals(`export const A = () => ${jsx};`, "sample.tsx");
+
+    it.each([
+      ["JSX text", "<Text>Hallo</Text>"],
+      ["a label prop", '<Button label="Lagre" />'],
+      ["the body prop", '<MessageState title={t("x")} body="Tomt" />'],
+      ["a ternary in a prop", '<Button label={ok ? "Ja" : "Nei"} />'],
+      ["a logical expression in a prop", '<Button label={name || "Ukjent"} />'],
+      ["a template literal with words", "<Button label={`Hei ${name}`} />"],
+      ["an expression child", '<Text>{"Hallo"}</Text>'],
+      ["a ternary child", '<Text>{ok ? "Ja" : "Nei"}</Text>'],
+    ])("detects %s", (_name, jsx) => {
+      expect(scan(jsx).length).toBeGreaterThan(0);
+    });
+
+    it.each([
+      ["translated text", '<Text>{t("a.b")}</Text>'],
+      ["a symbol before a variable", "<Text>{`@${name}`}</Text>"],
+      ["a bullet", "<Text>• {t('a')}</Text>"],
+      ["non-user-facing props", '<View testID="row" style={{ flex: 1 }} />'],
+    ])("allows %s", (_name, jsx) => {
+      expect(scan(jsx)).toEqual([]);
+    });
   });
 });

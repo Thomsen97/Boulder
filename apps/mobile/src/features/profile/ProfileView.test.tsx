@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 
+import { mockControl } from "@/lib/mock/control";
 import { getDb } from "@/lib/mock/db";
 import { renderWithProviders, signInOnboarded } from "@/test/helpers";
 
@@ -88,6 +89,23 @@ describe("profile states", () => {
 });
 
 describe("profile actions", () => {
+  it("shows a message when following fails and keeps the state", async () => {
+    await renderWithProviders(<UserProfileScreen username="emma" />);
+    const follow = await screen.findByRole("button", { name: "Følg" });
+    mockControl.failNext = 1;
+    await fireEvent.press(follow);
+
+    expect(await screen.findByText("Kunne ikke fullføre handlingen. Prøv igjen.")).toBeTruthy();
+    expect(getDb().following.has("user-emma")).toBe(false);
+  });
+
+  it("uses the singular for one follower", async () => {
+    getDb().users.find((u) => u.username === "emma")!.followerCount = 1;
+    await renderWithProviders(<UserProfileScreen username="emma" />);
+
+    expect(await screen.findByText("1 følger")).toBeTruthy();
+  });
+
   it("following a public profile is immediate", async () => {
     await renderWithProviders(<UserProfileScreen username="emma" />);
     await fireEvent.press(await screen.findByRole("button", { name: "Følg" }));

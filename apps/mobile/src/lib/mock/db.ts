@@ -15,6 +15,9 @@ interface MockDb {
   users: MockUser[];
   following: Set<string>;
   requested: Set<string>;
+  /** Users following me. */
+  followers: Set<string>;
+  /** Pending requests to follow me; they only exist while my profile is private (PROF-3). */
   incomingRequests: Set<string>;
   blocked: Set<string>;
   /** Usernames that are taken (the ones in `users` are implicitly taken too). */
@@ -65,6 +68,7 @@ function createDb(): MockDb {
     ],
     following: new Set(["user-ola", "user-jonas"]),
     requested: new Set(["user-nina"]),
+    followers: new Set(["user-emma", "user-ola", "user-jonas"]),
     incomingRequests: new Set(["user-lars", "user-mia"]),
     blocked: new Set(["user-troll"]),
     takenUsernames: new Set(["sebastian", "klatrer", "fbs"]),
@@ -113,7 +117,7 @@ export function ownProfile(): UserProfile {
     avatarUrl: me.avatarUrl,
     isPrivate: me.isPrivate,
     isOwn: true,
-    followerCount: 0,
+    followerCount: db.followers.size,
     followingCount: db.following.size,
     followState: "none",
     canViewContent: true,
