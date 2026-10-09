@@ -40,7 +40,10 @@ export function FollowRequestsScreen() {
                         name: person.displayName,
                       })}
                       disabled={accept.isPending || decline.isPending}
-                      onPress={() => accept.mutate(person.id)}
+                      onPress={() => {
+                        decline.reset();
+                        accept.mutate(person.id);
+                      }}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -51,7 +54,10 @@ export function FollowRequestsScreen() {
                         name: person.displayName,
                       })}
                       disabled={accept.isPending || decline.isPending}
-                      onPress={() => decline.mutate(person.id)}
+                      onPress={() => {
+                        accept.reset();
+                        decline.mutate(person.id);
+                      }}
                     />
                   </View>
                 </View>

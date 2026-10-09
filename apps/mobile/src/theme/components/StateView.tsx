@@ -104,11 +104,18 @@ export function AsyncView<T>({
 
 function RefreshFailed({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
+  const colors = useColors();
+  const typography = useTypography();
   return (
-    <MessageState
-      title={t("common.refreshFailed")}
-      action={{ label: t("common.retry"), onPress: onRetry }}
-    />
+    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+      <Text
+        accessibilityLiveRegion="polite"
+        style={[typography.caption, { color: colors.danger, flex: 1 }]}
+      >
+        {t("common.refreshFailed")}
+      </Text>
+      <Button variant="secondary" label={t("common.retry")} onPress={onRetry} />
+    </View>
   );
 }
 

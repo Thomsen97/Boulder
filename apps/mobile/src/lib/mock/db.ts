@@ -69,7 +69,7 @@ function createDb(): MockDb {
     following: new Set(["user-ola", "user-jonas"]),
     requested: new Set(["user-nina"]),
     followers: new Set(["user-emma", "user-ola", "user-jonas"]),
-    incomingRequests: new Set(["user-lars", "user-mia"]),
+    incomingRequests: new Set(),
     blocked: new Set(["user-troll"]),
     takenUsernames: new Set(["sebastian", "klatrer", "fbs"]),
   };

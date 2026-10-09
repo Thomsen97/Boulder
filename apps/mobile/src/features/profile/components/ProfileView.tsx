@@ -92,6 +92,13 @@ function OtherActions({ profile }: { profile: UserProfile }) {
   const block = useBlock();
   const [confirmingBlock, setConfirmingBlock] = useState(false);
   const busy = follow.isPending || unfollow.isPending;
+  // A new action clears the error of the previous one.
+  const run = (action: () => void) => {
+    follow.reset();
+    unfollow.reset();
+    block.reset();
+    action();
+  };
 
   return (
     <View style={{ gap: spacing.sm }}>
@@ -100,7 +107,7 @@ function OtherActions({ profile }: { profile: UserProfile }) {
           label={profile.isPrivate ? t("profile.followPrivate") : t("profile.follow")}
           loading={follow.isPending}
           disabled={busy}
-          onPress={() => follow.mutate(profile.id)}
+          onPress={() => run(() => follow.mutate(profile.id))}
         />
       ) : profile.followState === "pending" ? (
         <>
@@ -111,7 +118,7 @@ function OtherActions({ profile }: { profile: UserProfile }) {
 
             loading={unfollow.isPending}
             disabled={busy}
-            onPress={() => unfollow.mutate(profile.id)}
+            onPress={() => run(() => unfollow.mutate(profile.id))}
           />
         </>
       ) : (
@@ -122,7 +129,7 @@ function OtherActions({ profile }: { profile: UserProfile }) {
             label={t("profile.unfollow")}
             loading={unfollow.isPending}
             disabled={busy}
-            onPress={() => unfollow.mutate(profile.id)}
+            onPress={() => run(() => unfollow.mutate(profile.id))}
           />
         </>
       )}
@@ -142,7 +149,7 @@ function OtherActions({ profile }: { profile: UserProfile }) {
         onCancel={() => setConfirmingBlock(false)}
         onConfirm={() => {
           setConfirmingBlock(false);
-          block.mutate(profile.id);
+          run(() => block.mutate(profile.id));
         }}
       />
     </View>

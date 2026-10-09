@@ -3,7 +3,11 @@ import { router } from "expo-router";
 
 import { mockControl } from "@/lib/mock/control";
 import { getDb } from "@/lib/mock/db";
-import { renderWithProviders, signInOnboarded } from "@/test/helpers";
+import {
+  makeProfilePrivateWithRequests,
+  renderWithProviders,
+  signInOnboarded,
+} from "@/test/helpers";
 
 import { BlockedUsersScreen } from "./screens/BlockedUsersScreen";
 import { FollowRequestsScreen } from "./screens/FollowRequestsScreen";
@@ -13,7 +17,7 @@ beforeEach(() => signInOnboarded());
 describe("follow requests (PROF-3)", () => {
   // Requests only exist for a private profile.
   beforeEach(() => {
-    getDb().me.isPrivate = true;
+    makeProfilePrivateWithRequests();
   });
 
   it("is empty for a public profile", async () => {
@@ -62,7 +66,7 @@ describe("follow requests (PROF-3)", () => {
 
 describe("failed actions", () => {
   it("shows a message when accepting a request fails", async () => {
-    getDb().me.isPrivate = true;
+    makeProfilePrivateWithRequests();
     await renderWithProviders(<FollowRequestsScreen />);
     const accept = await screen.findByRole("button", { name: "Godkjenn Lars Dahl" });
     mockControl.failNext = 1;
@@ -114,7 +118,7 @@ describe("blocked users (SAFE-1)", () => {
 
 describe("follow request rows", () => {
   beforeEach(() => {
-    getDb().me.isPrivate = true;
+    makeProfilePrivateWithRequests();
   });
 
   it("open the requester's profile", async () => {

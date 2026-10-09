@@ -36,6 +36,8 @@ export function useUpdateMe() {
     onSuccess: (me) => {
       client.setQueryData(profileKeys.me, me);
       void client.invalidateQueries({ queryKey: profileKeys.users });
+      // Going public accepts pending follow requests, so the request list changes too.
+      void client.invalidateQueries({ queryKey: ["social", "requests"] });
     },
   });
 }

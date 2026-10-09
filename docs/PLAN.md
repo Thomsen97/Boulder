@@ -155,7 +155,7 @@ Done when:
 - [x] Username validation follows AUTH-4 (unit tests)
 - [x] Component tests: profile renders correctly as own, public other, private other not followed, pending request, followed, blocked
 - [x] No user-visible string literals outside `nb.json`
-- [ ] Standard checks green
+- [x] Standard checks green
 
 Notes:
 - Manual walk-through pending (Sebastian), iPhone in Expo Go (`npx expo start` in `apps/mobile`). Every screen is also opened by URL in `reachability.test.tsx`, so the walk-through only checks look and feel and that the buttons lead to the right screens:
@@ -173,6 +173,7 @@ Notes:
 - Typed routes (`experiments.typedRoutes`) are removed from `app.config.ts`: the local generator treated the whole project folder as the routes root and produced types that rejected valid paths. CI never generated them, so type checking there is unchanged.
 - New dependencies: `react-hook-form`, `zod`, `@hookform/resolvers` (forms and validation, SPEC 8.2), `zustand` (the mock session, SPEC 8.2). Dev only: `@babel/parser` and `@babel/traverse` (version 7, because Jest cannot load version 8) for the `no-literals.test.ts` scan, and `@types/node` for it.
 - Review round 1 decisions: `MockProfilesSection` reads the mock database directly, which is an exception to "screens only use hooks" (architecture 4.2); it is mock-only and goes away with the mock layer in phase 5. The follow-request and blocked lists are plain lists in a `ScrollView`, not FlashList (architecture 4.5); they stay short at beta size, and the feeds in phase 13 use FlashList. Open question for Sebastian: the welcome screen shows "Fortsett med Apple" on every platform; AUTH-1 does not say whether Android gets it, so phase 4 decides. `DeleteAccountScreen` checks the 10-minute sign-in only when it opens; the server enforces DEL-1 later (phase 21).
+- Review round 2: the router tests render the whole route tree and need more than the default Jest timeout on a cold cache (`testTimeout: 30000`). The string-literal scan covers `.tsx` files only; `.ts` files produce i18n keys, which `i18n.test.ts` checks. The mock starts with no follow requests; they arrive when the profile becomes private.
 - Follow-up: console output of the tests contains React `act()` warnings from mutations and refetches finishing after a test step. They do not fail tests; a quieter setup can come later.
 
 ---

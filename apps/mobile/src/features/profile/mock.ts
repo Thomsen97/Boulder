@@ -36,6 +36,10 @@ export function createMockProfileApi(now: () => Date = () => new Date()): Profil
             db.me.usernameChangedAt = now().toISOString();
           }
         }
+        // Once the profile is private, people start asking to follow (mock data for the screens).
+        if (next.isPrivate === true && !db.me.isPrivate && db.incomingRequests.size === 0) {
+          db.incomingRequests.add("user-lars").add("user-mia");
+        }
         // 5.6: going public accepts every pending follow request.
         if (next.isPrivate === false && db.me.isPrivate) {
           db.incomingRequests.forEach((id) => db.followers.add(id));

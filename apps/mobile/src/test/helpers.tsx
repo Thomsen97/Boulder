@@ -49,3 +49,10 @@ export function signInOnboarded(overrides: Partial<ReturnType<typeof getDb>["me"
   };
   useSession.getState().signIn();
 }
+
+/** A private profile with two pending follow requests (PROF-3). */
+export function makeProfilePrivateWithRequests() {
+  const db = getDb();
+  db.me.isPrivate = true;
+  db.incomingRequests.add("user-lars").add("user-mia");
+}

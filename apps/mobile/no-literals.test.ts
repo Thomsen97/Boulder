@@ -5,6 +5,9 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import type { Expression } from "@babel/types";
 
+// Scans .tsx files (components and routes). Plain .ts files (hooks, mocks, schemas) hold no JSX; the
+// strings they produce are i18n keys, which the i18n test checks against nb.json.
+
 // CLAUDE.md rule 5: UI text lives only in src/i18n/nb.json. This scans every component and route
 // file and fails on user-visible string literals: JSX text, and string values (also inside
 // ternaries, logical expressions and template literals) of props that users or screen readers see.
@@ -24,6 +27,9 @@ const USER_FACING_PROPS = new Set([
   "message",
   "confirmLabel",
   "cancelLabel",
+  // Props that take an object such as { title, body } or { label, onPress }.
+  "empty",
+  "action",
 ]);
 const letters = /\p{L}/u;
 
@@ -49,6 +55,15 @@ function literalsIn(expression: Expression | null | undefined): string[] {
       return [...literalsIn(expression.consequent), ...literalsIn(expression.alternate)];
     case "LogicalExpression":
       return [...literalsIn(expression.left), ...literalsIn(expression.right)];
+    case "ObjectExpression":
+      // {{ title: "...", label: "..." }} passed as a prop value.
+      return expression.properties.flatMap((property) =>
+        property.type === "ObjectProperty" &&
+        property.key.type === "Identifier" &&
+        USER_FACING_PROPS.has(property.key.name)
+          ? literalsIn(property.value as Expression)
+          : [],
+      );
     case "ParenthesizedExpression":
       return literalsIn(expression.expression);
     default:
@@ -116,6 +131,7 @@ describe("no user-visible string literals outside nb.json", () => {
       ["a ternary in a prop", '<Button label={ok ? "Ja" : "Nei"} />'],
       ["a logical expression in a prop", '<Button label={name || "Ukjent"} />'],
       ["a template literal with words", "<Button label={`Hei ${name}`} />"],
+      ["a label inside an object prop", '<Panel empty={{ title: "Tomt" }} />'],
       ["an expression child", '<Text>{"Hallo"}</Text>'],
       ["a ternary child", '<Text>{ok ? "Ja" : "Nei"}</Text>'],
     ])("detects %s", (_name, jsx) => {
