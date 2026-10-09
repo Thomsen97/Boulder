@@ -32,6 +32,8 @@ apps/mobile/node_modules/
 apps/mobile/.expo/
 apps/mobile/dist/
 apps/mobile/.expo-shared/
+apps/mobile/coverage/
+apps/mobile/*.tsbuildinfo
 
 # OS
 .DS_Store
