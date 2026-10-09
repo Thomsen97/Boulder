@@ -21,7 +21,7 @@ API (from the repo root, Docker Desktop running):
 - `dotnet test api/Boulder.sln`
 - `dotnet run --project api/src/Boulder.Api`
 - `dotnet ef migrations add <Name> --project api/src/Boulder.Infrastructure --startup-project api/src/Boulder.Api`
-- OpenAPI export to `api/openapi/v1.json`: command defined in phase 0
+- OpenAPI export: `dotnet run --project api/src/Boulder.Api -- --export-openapi --output-path "$(pwd)/api/openapi/v1.json"` (requires Postgres running; run from repo root)
 
 Mobile (in `apps/mobile`):
 - `npm run lint`, `npm run typecheck`, `npm test`

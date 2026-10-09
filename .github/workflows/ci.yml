@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API build and test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: boulder_dev
+          POSTGRES_USER: boulder
+          POSTGRES_PASSWORD: boulder
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__Default: "Host=localhost;Port=5432;Database=boulder_dev;Username=boulder;Password=boulder"
+      ASPNETCORE_ENVIRONMENT: Development
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore api/Boulder.sln
+
+      - name: Check for vulnerable packages
+        run: |
+          dotnet list api/Boulder.sln package --vulnerable --include-transitive 2>&1 | tee /tmp/vuln.txt
+          if grep -q "has the following vulnerable" /tmp/vuln.txt; then
+            echo "Vulnerable packages detected:"
+            grep -A 20 "has the following vulnerable" /tmp/vuln.txt
+            exit 1
+          fi
+
+      - name: Build
+        run: dotnet build api/Boulder.sln --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test api/Boulder.sln --no-build --configuration Release --logger "console;verbosity=minimal"
+
+      - name: Export OpenAPI document
+        run: |
+          dotnet run --project api/src/Boulder.Api --configuration Release -- \
+            --export-openapi --output-path "$GITHUB_WORKSPACE/api/openapi/v1.json"
+
+      - name: Check OpenAPI drift
+        run: git diff --exit-code api/openapi/v1.json

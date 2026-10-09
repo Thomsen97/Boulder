@@ -1,0 +1,46 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# .NET build output
+api/src/*/bin/
+api/src/*/obj/
+api/tests/*/bin/
+api/tests/*/obj/
+
+# EF Core design-time binaries (generated artifacts)
+api/src/*/Migrations/*.designer.cs.bak
+
+# User-specific Visual Studio / Rider files
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# Node / Expo / mobile
+apps/mobile/node_modules/
+apps/mobile/.expo/
+apps/mobile/dist/
+apps/mobile/.expo-shared/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test results
+TestResults/
+coverage/
