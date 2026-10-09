@@ -151,14 +151,14 @@ Notes:
 Screens: welcome/sign-in (buttons only), onboarding (username with live availability check, display name, avatar placeholder, 16+ checkbox, guidelines), own profile, other user's profile, edit profile, settings (private profile, "Del loggene mine", "Skjul beta" with three modes, notification placeholder, "Slett konto" flow), follow requests, blocked users.
 
 Done when:
-- [ ] Every screen is reachable and has loading, empty and error states
+- [x] Every screen is reachable and has loading, empty and error states
 - [x] Username validation follows AUTH-4 (unit tests)
 - [x] Component tests: profile renders correctly as own, public other, private other not followed, pending request, followed, blocked
 - [x] No user-visible string literals outside `nb.json`
 - [x] Standard checks green
 
 Notes:
-- Manual walk-through pending (Sebastian), iPhone in Expo Go (`npx expo start` in `apps/mobile`). Every screen is also opened by URL in `reachability.test.tsx`, so the walk-through only checks look and feel and that the buttons lead to the right screens:
+- Manual walk-through done by Sebastian on an iPhone in Expo Go (all steps looked fine). Steps, for reference: iPhone in Expo Go (`npx expo start` in `apps/mobile`). Every screen is also opened by URL in `reachability.test.tsx`, so the walk-through only checks look and feel and that the buttons lead to the right screens:
   1. Fresh start: the welcome screen shows three sign-in buttons. Tap any: onboarding opens (the sign-in is fake).
   2. Onboarding: type `emma` (taken), `ab` (too short), `1abc`, `admin`; see the message under the field each time. Type `klatrer1`, wait for "Brukernavnet er ledig". The "Kom i gang" button stays disabled until name, age box and guidelines box are done. Finish: the five tabs open.
   3. Profil tab: your own profile with "Rediger profil" and a settings icon. Open Rediger profil, change name and bio, save. Change the username once; after saving, the username field is locked for 30 days.
