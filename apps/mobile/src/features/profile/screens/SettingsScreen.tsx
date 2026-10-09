@@ -7,6 +7,7 @@ import { useSession } from "@/features/session/store";
 import { spacing, useColors, useTypography } from "@/theme";
 import { AsyncView, Button, ConfirmDialog, ListRow, Screen, SwitchRow } from "@/theme/components";
 
+import { MockProfilesSection } from "../components/MockProfilesSection";
 import { useMe, useUpdateMe } from "../hooks";
 import type { Me, SpoilerMode } from "../types";
 
@@ -89,6 +90,8 @@ function SettingsContent({ me }: { me: Me }) {
           onPress={() => router.push("/settings/blocked")}
         />
       </Section>
+
+      <MockProfilesSection />
 
       <Section title={t("settings.accountSection")}>
         <Button variant="secondary" label={t("settings.signOut")} onPress={() => signOut()} />

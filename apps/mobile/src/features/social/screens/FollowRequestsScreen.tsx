@@ -1,16 +1,15 @@
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
-import { spacing, useColors, useTypography } from "@/theme";
-import { Avatar, AsyncView, Button, Screen } from "@/theme/components";
+import { spacing } from "@/theme";
+import { Avatar, AsyncView, Button, ListRow, Screen } from "@/theme/components";
 
 import { useAcceptFollowRequest, useDeclineFollowRequest, useFollowRequests } from "../hooks";
 
 /** PROF-3: requests to follow a private profile, accepted or declined by the target. */
 export function FollowRequestsScreen() {
   const { t } = useTranslation();
-  const colors = useColors();
-  const typography = useTypography();
   const query = useFollowRequests();
   const accept = useAcceptFollowRequest();
   const decline = useDeclineFollowRequest();
@@ -26,17 +25,12 @@ export function FollowRequestsScreen() {
           <View style={{ gap: spacing.md }}>
             {requests.map((person) => (
               <View key={person.id} style={{ gap: spacing.sm }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
-                  <Avatar name={person.displayName} size={48} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[typography.body, { color: colors.text, fontWeight: "600" }]}>
-                      {person.displayName}
-                    </Text>
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>
-                      @{person.username}
-                    </Text>
-                  </View>
-                </View>
+                <ListRow
+                  leading={<Avatar name={person.displayName} size={48} />}
+                  label={person.displayName}
+                  description={`@${person.username}`}
+                  onPress={() => router.push(`/user/${person.username}`)}
+                />
                 <View style={{ flexDirection: "row", gap: spacing.sm }}>
                   <View style={{ flex: 1 }}>
                     <Button

@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { router } from "expo-router";
 
 import { mockControl } from "@/lib/mock/control";
 import { getDb } from "@/lib/mock/db";
@@ -73,5 +74,16 @@ describe("blocked users (SAFE-1)", () => {
     expect(await screen.findByText("Noe gikk galt")).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Prøv igjen" }));
     expect(await screen.findByText("Trollet")).toBeTruthy();
+  });
+});
+
+describe("follow request rows", () => {
+  it("open the requester's profile", async () => {
+    const push = jest.spyOn(router, "push").mockImplementation(() => {});
+    await renderWithProviders(<FollowRequestsScreen />);
+    await fireEvent.press(await screen.findByRole("button", { name: "Lars Dahl. @lars" }));
+
+    expect(push).toHaveBeenCalledWith("/user/lars");
+    push.mockRestore();
   });
 });

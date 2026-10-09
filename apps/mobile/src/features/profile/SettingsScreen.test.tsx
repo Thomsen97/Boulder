@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { router } from "expo-router";
 
 import { useSession } from "@/features/session/store";
 import { getDb } from "@/lib/mock/db";
@@ -97,6 +98,16 @@ describe("settings", () => {
 
     expect(await screen.findByText("Kunne ikke lagre innstillingen. Prøv igjen.")).toBeTruthy();
     expect(getDb().me.shareAscents).toBe(true);
+  });
+
+  it("lists the example profiles in mock mode and opens one", async () => {
+    const push = jest.spyOn(router, "push").mockImplementation(() => {});
+    await renderWithProviders(<SettingsScreen />);
+
+    expect(await screen.findByText("Eksempelprofiler (testversjon)")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: /Kari Hansen/ }));
+    expect(push).toHaveBeenCalledWith("/user/kari");
+    push.mockRestore();
   });
 
   it("signs out", async () => {

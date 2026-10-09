@@ -144,6 +144,9 @@
     "followRequests": "Følgeforespørsler",
     "blockedUsers": "Blokkerte brukere",
     "accountSection": "Konto",
+    "mockProfilesSection": "Eksempelprofiler (testversjon)",
+    "mockProfilesHint": "Brukersøk kommer senere. Bruk disse for å se profiler i ulike tilstander.",
+    "mockProfilesMissing": "Bruker som ikke finnes",
     "signOut": "Logg ut",
     "deleteAccount": "Slett konto",
     "saveError": "Kunne ikke lagre innstillingen. Prøv igjen."
