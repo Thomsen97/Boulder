@@ -36,7 +36,7 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 | 0 | API foundation and CI | B1 | none | Done |
 | 1 | Mobile foundation | B1 | 0 | Done |
 | 2 | UI: onboarding, profile, settings | B1 | 1 | Done |
-| 3 | API: authentication, users, onboarding | B1 | 0 | In progress |
+| 3 | API: authentication, users, onboarding | B1 | 0 | In review |
 | 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
 | 5 | Social graph: follows, blocks, search | B1 | 4 | Not started |
 | 6 | UI: groups | B1 | 1 | Not started |
@@ -193,14 +193,26 @@ Tasks:
 - Regenerate OpenAPI and mobile types (the app stays on mocks until phase 4).
 
 Done when:
-- [ ] Integration tests: valid token accepted; expired, wrong issuer, wrong audience, HS256-signed and unsigned tokens get 401
-- [ ] Not-onboarded user gets 403 `onboarding_required`; onboarding creates the user; duplicate username (any case) gets 409
-- [ ] Username rules and the 30-day rename limit are unit tested
-- [ ] Suspended user gets 403 `account_suspended` on everything except `GET /me`
-- [ ] Username availability check returns 429 with `Retry-After` over the limit
-- [ ] OpenAPI and mobile types regenerated without drift
+- [x] Integration tests: valid token accepted; expired, wrong issuer, wrong audience, HS256-signed and unsigned tokens get 401
+- [x] Not-onboarded user gets 403 `onboarding_required`; onboarding creates the user; duplicate username (any case) gets 409
+- [x] Username rules and the 30-day rename limit are unit tested
+- [x] Suspended user gets 403 `account_suspended` on everything except `GET /me`
+- [x] Username availability check returns 429 with `Retry-After` over the limit
+- [x] OpenAPI and mobile types regenerated without drift
 
 Notes:
+- No manual checks: everything is covered by automated tests (`AuthenticationTests`, `OnboardingTests`, `UpdateMeTests`, `UserProfileTests`, `SuspensionTests`, `RateLimitTests`, `UsernameRulesTests`). The tests sign tokens with a real ES256 key pair and serve the JWKS through the production HTTP client path (a stub handler), so there is no auth bypass. A key rotation test proves an unknown `kid` triggers a JWKS refetch.
+- JWKS handling is a small custom cache (`JwksKeyCache`) instead of the stock configuration manager: it downloads on first use and on an unknown `kid`, at most once per `Supabase:JwksMinRefetchInterval` (30 s; 0 in tests). Only P-256 keys are accepted and `ValidAlgorithms` is `ES256`, so HS256 and `alg: none` fail.
+- `Supabase:JwksUrl` and `Supabase:Issuer` are required at startup. `appsettings.Development.json` holds placeholders (`example.invalid`), so `dotnet run` and the CI OpenAPI export work without secrets; real values come from the environment (`.env.example`, README).
+- Endpoints are under `/api/v1` (SPEC 13); `/health` stays unprefixed. All endpoints require a token by default (authorization fallback policy); `/health`, `/openapi` and Scalar are anonymous. Unknown routes are answered 404 by an anonymous fallback endpoint, because the fallback policy would otherwise answer 401.
+- Account gate: `GET /me` works before onboarding and while suspended. The body for a not-onboarded user is `onboardingComplete: false` with every other field null; it also carries `status` so the app can show the suspension screen. `POST /me/onboarding` and the availability check work before onboarding; everything else answers `onboarding_required`. A deleted account answers 401 (account deletion itself is phase 21).
+- Interpretations: usernames are trimmed and stored lower case; a suspended or deleted user's profile is 404 for others; renaming to the same name in another case is a no-op that does not use the 30-day limit; availability returns `available: false` with a `reason` (`tooShort`, `tooLong`, `invalidChars`, `mustStartWithLetter`, `reserved`, `taken`) and treats the caller's own name as available; the profile bio is trimmed and limited to 160 characters, display names to 1 to 50; the guidelines version is any non-empty string up to 20 characters. New error codes: `unauthorized`, `rate_limited`, `username_taken`, `username_change_too_soon` (with `nextChangeAt`), `already_onboarded`.
+- Phase 5 gaps, deliberately left: `GET /users/{username}` returns follower counts 0 and `followState: none`, and has no block check. `IVisibility` only has `GetProfileAccessAsync` now (public or own: full; private other: header only); phase 5 adds follows and blocks and phase 8 the post and ascent queries. The authorization matrix covers the viewer types that exist today (self, stranger vs public and private, suspended, not onboarded, deleted and suspended targets, anonymous). The private-to-public auto-accept of follow requests (SPEC 5.6) belongs to phase 5 because `follows` does not exist yet.
+- Rate limiting: sliding window (6 segments per minute) per user from the token `sub`, per IP otherwise; limit 30 per minute from SEC-6, overridable with `RateLimiting:UsernameAvailabilityPerMinute`. The rejection is a ProblemDetails with `rate_limited` and `Retry-After`.
+- New dependency: `Microsoft.AspNetCore.Authentication.JwtBearer` 10.0.12 (JWT validation, SPEC 8.3). No `FakeTimeProvider` package was needed: the rename rule takes the current time as an argument and the handler uses `TimeProvider`.
+- The app stays on mocks: only the generated types changed. Mobile `UsernameAvailability` still has only `taken` as a reason; phase 4 switches the features to live and adapts the types (including the nullable `MeDto` for a not-onboarded user).
+- `UserStore` maps the Postgres unique violation (`23505`) on `ix_users_username` and `ix_users_auth_subject` to a conflict, so two simultaneous onboardings with the same name give exactly one 201 (tested).
+- The OpenAPI document has no bearer security scheme yet; the generated client does not need one, and phase 4 adds the token middleware on the client side. Possible follow-up.
 
 ---
 

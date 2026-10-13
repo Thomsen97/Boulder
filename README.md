@@ -104,4 +104,4 @@ docs/                      SPEC.md, PLAN.md, architecture.md, ADRs
 
 `.env.example` documents every variable the application reads. `.env` is git-ignored and must never be committed.
 
-For local development `ConnectionStrings__Default` is already set in `appsettings.Development.json` to match the docker-compose defaults, so no `.env` file is needed for the API. The other variables (Supabase, Cloudflare R2, etc.) are used by the production deployment and by later phases; see `.env.example` for details.
+For local development `ConnectionStrings__Default` is already set in `appsettings.Development.json` to match the docker-compose defaults, so no `.env` file is needed for the API. The same file holds placeholder values for `Supabase__JwksUrl` and `Supabase__Issuer`: the API starts and exports OpenAPI with them, but accepts no real token until phase 4 sets up a Supabase project and you put its values in the environment. Outside Development the API refuses to start without these two settings. The other variables (Cloudflare R2, etc.) are used by the production deployment and by later phases; see `.env.example` for details.
