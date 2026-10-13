@@ -5,12 +5,26 @@ import { useEffect } from "react";
 
 import "@/i18n";
 import { useMe } from "@/features/profile/hooks";
-import { useSession } from "@/features/session/store";
+import { startSessionSync, useSession } from "@/features/session/store";
 import { QueryProvider } from "@/lib/api/QueryProvider";
+import { configureApiAuth } from "@/lib/api/client";
+import { getApiMode } from "@/lib/api/mode";
+import { getAccessToken, refreshAccessToken } from "@/lib/auth/actions";
 import { useColors } from "@/theme";
 import { ErrorState, LoadingState } from "@/theme/components";
 
 export default function RootLayout() {
+  // Live mode: the API client sends the Supabase token and the store follows the Supabase session.
+  useEffect(() => {
+    if (getApiMode("auth") !== "live") return;
+    configureApiAuth({
+      getToken: getAccessToken,
+      refresh: refreshAccessToken,
+      onSignedOut: () => useSession.getState().signOut(),
+    });
+    return startSessionSync();
+  }, []);
+
   return (
     <QueryProvider>
       <StatusBar style="auto" />
@@ -26,6 +40,7 @@ export default function RootLayout() {
 function AuthGate() {
   const colors = useColors();
   const client = useQueryClient();
+  const ready = useSession((s) => s.ready);
   const signedIn = useSession((s) => s.signedIn);
   const me = useMe({ enabled: signedIn });
 
@@ -33,6 +48,9 @@ function AuthGate() {
   useEffect(() => {
     if (!signedIn) client.clear();
   }, [signedIn, client]);
+
+  // The stored session is restored asynchronously at start (AUTH-5).
+  if (!ready) return <LoadingState />;
 
   // Only block the app while there is nothing to route by. A failed background refetch keeps the
   // cached profile, so the user does not lose their place in the navigator.

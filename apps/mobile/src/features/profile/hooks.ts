@@ -1,13 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { getApiMode, type ApiMode } from "@/lib/api/mode";
+
+import { createLiveProfileApi } from "./api";
 import { createMockProfileApi } from "./mock";
 import { validateUsername } from "./username";
 import type { ProfileApi } from "./api";
 import type { MeUpdate, OnboardingInput } from "./types";
 
-// Only the mock exists until phase 3, so the mode switch is not needed yet (see api.ts).
-const api: ProfileApi = createMockProfileApi();
+export function selectProfileApi(mode: ApiMode): ProfileApi {
+  return mode === "live" ? createLiveProfileApi() : createMockProfileApi();
+}
+
+// Chosen once per app start: the mode comes from EXPO_PUBLIC_API_MODE, which is bundled at build time.
+const api: ProfileApi = selectProfileApi(getApiMode("profile"));
 
 export const profileKeys = {
   me: ["profile", "me"] as const,
