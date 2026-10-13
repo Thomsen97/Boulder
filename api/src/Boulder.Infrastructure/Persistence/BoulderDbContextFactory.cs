@@ -10,7 +10,7 @@ public class BoulderDbContextFactory : IDesignTimeDbContextFactory<BoulderDbCont
     {
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__Default")
-            ?? "Host=localhost;Port=5432;Database=boulder_dev;Username=boulder;Password=boulder";
+            ?? "Host=localhost;Port=5433;Database=boulder_dev;Username=boulder;Password=boulder";
 
         var options = new DbContextOptionsBuilder<BoulderDbContext>()
             .UseNpgsql(connectionString,

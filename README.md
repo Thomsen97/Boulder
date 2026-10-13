@@ -20,7 +20,7 @@ Mobile social hub for bouldering friend groups — Expo (React Native) app, ASP.
 docker compose -f infra/docker-compose.dev.yml up -d
 ```
 
-This starts a Postgres 17 container on port 5432 with:
+This starts a Postgres 18 container on port 5433 (5432 is often taken by a Postgres installed on the PC) with:
 - database: `boulder_dev`
 - user/password: `boulder` / `boulder`
 
@@ -82,7 +82,7 @@ Phase 4 connects the app to Supabase Auth and to the local API. Expo Go cannot b
 
 Create a project in an EU region. Then:
 - Authentication, Sign In / Providers: enable **Email** and **Google**; keep **Allow anonymous sign-ins** off. Under Email set **Email OTP Length** to **6** (the app only accepts 6 digits).
-- Authentication, Emails (Templates): Supabase sends a link unless the template contains the code. In both the **Magic link** and the **Confirm signup** template replace `{{ .ConfirmationURL }}` with `{{ .Token }}` (for example "Din kode er: {{ .Token }}"). Without this the email contains a link and sign-in with a code cannot be finished (AUTH-1: 6 digits, no magic links). The built-in email sender is limited to a few emails per hour and meant for testing; configure custom SMTP (for example Resend) before the beta.
+- Authentication, Emails (Templates): Supabase sends a link unless the template contains the code. In both the **Magic link** and the **Confirm signup** template replace `{{ .ConfirmationURL }}` with `{{ .Token }}` (for example "Din kode er: {{ .Token }}"). Without this the email contains a link and sign-in with a code cannot be finished (AUTH-1: 6 digits, no magic links). Supabase only lets you edit the templates after you set up **custom SMTP** (Authentication, Emails, SMTP Settings): with Resend use host `smtp.resend.com`, port `465`, username `resend` and an API key as the password. Without your own verified domain Resend only delivers to your own account address, which is enough for testing; friends need a verified domain.
 - Authentication, URL Configuration: add `boulder://**` to the redirect URLs.
 - Settings, JWT Signing Keys: the current key must be asymmetric (ECC P-256). The API only accepts ES256.
 - Google: in Google Cloud Console create an OAuth consent screen (External, Testing; add every tester as a test user) and a **Web application** OAuth client whose authorized redirect URI is the callback URL shown on Supabase's Google provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Put its Client ID and secret into the Supabase Google provider. The app uses the system browser for Google sign-in, so no Android client ID is needed yet.
