@@ -47,7 +47,11 @@ export type MeUpdate = Partial<
   Pick<Me, "displayName" | "bio" | "username" | "isPrivate" | "shareAscents" | "spoilerMode">
 >;
 
-export type UsernameAvailability = { available: true } | { available: false; reason: "taken" };
+export type UsernameUnavailableReason =
+  "tooShort" | "tooLong" | "invalidChars" | "mustStartWithLetter" | "reserved" | "taken";
+
+export type UsernameAvailability =
+  { available: true } | { available: false; reason: UsernameUnavailableReason };
 
 export interface PersonSummary {
   id: string;

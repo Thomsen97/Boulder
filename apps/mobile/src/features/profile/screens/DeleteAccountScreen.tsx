@@ -35,6 +35,7 @@ function DeleteAccountContent({ me }: { me: Me }) {
       <MessageState
         title={t("deleteAccount.reauthTitle")}
         body={t("deleteAccount.reauthBody")}
+        // TODO(phase 21): a real re-sign-in. This mock call only passes the DEL-1 time check.
         action={{ label: t("deleteAccount.reauthButton"), onPress: () => signIn() }}
       />
     );

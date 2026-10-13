@@ -36,8 +36,8 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 | 0 | API foundation and CI | B1 | none | Done |
 | 1 | Mobile foundation | B1 | 0 | Done |
 | 2 | UI: onboarding, profile, settings | B1 | 1 | Done |
-| 3 | API: authentication, users, onboarding | B1 | 0 | In review |
-| 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
+| 3 | API: authentication, users, onboarding | B1 | 0 | Done |
+| 4 | Real sign-in and first development builds | B1 | 2, 3 | In review |
 | 5 | Social graph: follows, blocks, search | B1 | 4 | Not started |
 | 6 | UI: groups | B1 | 1 | Not started |
 | 7 | API: groups, roles, invites | B1 | 4, 6 | Not started |
@@ -236,11 +236,24 @@ Tasks:
 Done when:
 - [ ] On an Android development build: sign in with email code and with Google, finish onboarding, see the own profile from the real API
 - [ ] The session survives an app restart; sign-out clears it and the old token is not used again
-- [ ] Sign in with Apple works on iOS, or its deferral to phase 23 is written in Notes
-- [ ] `README.md` documents the setup; no keys in git
+- [x] Sign in with Apple works on iOS, or its deferral to phase 23 is written in Notes
+- [x] `README.md` documents the setup; no keys in git
 
 Notes:
 - Decided with Sebastian during phase 2: show "Fortsett med Apple" on iOS only (Sign in with Apple is required there because Google is offered; Android gets Google and e-post). The phase 2 welcome screen currently shows it on every platform.
+- Sign in with Apple is **deferred to phase 23**: there is no Apple Developer Program membership yet, so there is no iOS build and no Apple button in live mode. Mock mode still shows it on iOS. The code path is ready for it (the button is gated on `Platform.OS === "ios"`); when the membership exists, add the Apple provider in Supabase and the native flow (`expo-apple-authentication` + `signInWithIdToken`).
+- **Manual checks still open** (need a development build on an Android phone; steps are in the PR description): email code and Google sign-in, onboarding, own profile from the real API, session survives restart, sign-out. The automated parts are covered by `LargeSecureStore`, `authFetch`, `liveSession`, `liveApi` and `WelcomeScreen` tests.
+- Google sign-in uses the system browser (`signInWithOAuth` with PKCE through `expo-web-browser`, redirect `boulder://auth/callback`), decided with Sebastian. It needs only the Web OAuth client in Supabase. A native Google flow (`@react-native-google-signin`, Android OAuth client with the EAS keystore SHA-1) is a later upgrade.
+- The API does not read `.env`. Local Supabase settings are .NET user secrets (`UserSecretsId` added to `Boulder.Api`); README documents the commands. The earlier README text that implied `.env` was wrong and is fixed.
+- Live mode is selected with `EXPO_PUBLIC_API_MODE`; the `auth` and `profile` features go live, `social` stays on its mock until phase 5. `getMe` for a not-yet-onboarded user maps the nullable `MeDto` to empty strings with `onboardingComplete: false`. `deleteAccount` in live mode rejects with `501 not_implemented` until phase 21; the delete-account screen shows its generic error.
+- API client: the token is added in a `fetch` wrapper (`createAuthFetch`) instead of an openapi-fetch middleware, because a 401 retry needs the request body again. On 401 it refreshes once and retries once; a rejected refresh token or a second 401 signs out. If the refresh cannot be attempted (offline) the session is kept. Sign-out revokes the refresh token on the server (global scope) and falls back to clearing the device.
+- Review round 1 (fixed): Hermes has no global WebCrypto, so Supabase PKCE would have used a `Math.random` verifier and the `plain` method; `ensureWebCrypto` installs `getRandomValues` and SHA-256 `digest` from `expo-crypto` before the client is created (tested with `crypto` removed). The README now says that the Email OTP length must be 6 and that the Magic link and Confirm signup templates must contain `{{ .Token }}`. An offline cold start keeps the user signed in (the error screen offers a retry) instead of showing the welcome screen. Automatic sign-outs (rejected refresh, repeated 401) only clear this device (`endSession`); the Settings sign-out still revokes the session on the server.
+- The dev database now listens on host port 5433 (compose, `appsettings.Development.json`, design-time factory, `.env.example`), and the compose volume is mounted at `/var/lib/postgresql` because the Postgres 18 image refuses `/data`; the port moved because a Postgres installed on the PC commonly owns 5432 and `dotnet ef` then talks to it ("password authentication failed for user boulder"). CI and Testcontainers are unaffected. Editing Supabase email templates (needed for the 6-digit code) requires custom SMTP; the README says so.
+- Manual check on an iPhone with Expo Go (2026-10-14, the owner has no Android device yet): email code sign-in, onboarding, own profile from the real API, restart keeps the session, sign-out, and Google sign-in (same email links to the same user) all worked. The Android development build check is still open. Lessons: the Magic link template is the one used for existing users and must be saved separately from Confirm signup; Supabase only unlocks template editing after custom SMTP is set up; in Expo Go the Google return address (`exp://<PC-IP>:8081/--/auth/callback`) did not match the `exp://**` redirect entry, so Supabase fell back to the Site URL (`localhost:3000`) and the sign-in only completed after the Site URL was set to the Expo Go address. This workaround is for Expo Go only; the Android build uses `boulder://`, which still has to be confirmed on a device.
+- Mock mode and most tests do not load the Supabase client (`src/lib/auth/lazy.ts`). Dynamic `import()` does not run in Jest here, so `require` is used on purpose.
+- New dependencies: `@supabase/supabase-js` (the auth client, ADR-0002), `expo-secure-store` and `@react-native-async-storage/async-storage` and `aes-js` (+ `@types/aes-js`) (LargeSecureStore, AUTH-5), `expo-crypto` (random LargeSecureStore key, and `getRandomValues` plus SHA-256 for PKCE: Hermes has no WebCrypto, so do not remove it), `expo-web-browser` (Google sign-in in the system browser), `expo-dev-client` (development build). SPEC section 8 names none of them.
+- EAS: `eas.json` has one profile, `development` (Android APK, internal distribution, EAS `development` environment). The public `EXPO_PUBLIC_*` values are EAS environment variables, not files in git. `eas init` has to be run once by the owner and the project id added to `app.config.ts`.
+- Follow-ups: (a) the Supabase free project is paused after a week of inactivity; add the daily keep-alive job from SPEC section 8 before the beta; (b) a blocking screen for `403 account_suspended` (architecture 4.3) is not built yet, a suspended user sees the generic error screen; (c) the account gate does not reject `is_anonymous` tokens, anonymous sign-ins are disabled in Supabase instead (phase 3 follow-up d); (d) `expo install --check` reports patch updates for `expo`, `expo-router` and `jest-expo` that predate this phase; (e) the 10-minute re-authentication for delete account (DEL-1) still uses the mock `signIn` and must become a real re-sign-in in phase 21.
 
 ---
 

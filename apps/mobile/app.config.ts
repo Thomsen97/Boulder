@@ -21,7 +21,12 @@ const config: ExpoConfig = {
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
   },
-  plugins: ["expo-router", "expo-localization"],
+  plugins: [
+    "expo-router",
+    "expo-localization",
+    "expo-secure-store",
+    "expo-web-browser",
+  ],
 };
 
 export default config;
