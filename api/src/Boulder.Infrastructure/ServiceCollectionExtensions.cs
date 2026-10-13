@@ -1,4 +1,7 @@
+using Boulder.Application.Users;
+using Boulder.Application.Visibility;
 using Boulder.Infrastructure.Persistence;
+using Boulder.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +17,8 @@ public static class ServiceCollectionExtensions
                 .UseNpgsql(connectionString,
                     o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                 .UseSnakeCaseNamingConvention());
+        services.AddScoped<IUserStore, UserStore>();
+        services.AddScoped<IVisibility, Visibility>();
         return services;
     }
 }
