@@ -26,12 +26,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DisplayName).HasMaxLength(User.DisplayNameMaxLength).IsRequired();
         builder.Property(u => u.Bio).HasMaxLength(User.BioMaxLength).IsRequired();
         builder.Property(u => u.IsPrivate).HasDefaultValue(false).IsRequired();
-        builder.Property(u => u.ShareAscents).HasDefaultValue(true).IsRequired();
+        // Sentinel = the DB default: EF treats a value equal to the sentinel as unset. With the CLR default as
+        // sentinel, inserting false (or Off) would silently store the DB default instead.
+        builder.Property(u => u.ShareAscents).HasDefaultValue(true).HasSentinel(true).IsRequired();
         builder.Property(u => u.GuidelinesVersion).HasMaxLength(User.GuidelinesVersionMaxLength).IsRequired();
 
         builder.Property(u => u.SpoilerMode)
             .HasConversion(v => v.ToText(), v => UserEnumText.ParseSpoilerMode(v))
             .HasDefaultValue(SpoilerMode.Projects)
+            .HasSentinel(SpoilerMode.Projects)
             .IsRequired();
         builder.Property(u => u.Role)
             .HasConversion(v => v.ToText(), v => UserEnumText.ParseRole(v))
