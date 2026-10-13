@@ -68,13 +68,18 @@ export function startSessionSync(): () => void {
  * user signed in; requests fail with the normal error state until a refresh succeeds.
  */
 async function restoreWithoutNetwork() {
-  const { data, error } = await loadSupabase().getSupabase().auth.getSession();
-  const offline = !data.session && error !== null && loadActions().isRetryableAuthError(error);
-  useSession.setState({
-    ready: true,
-    signedIn: Boolean(data.session) || offline,
-    lastSignInAt: data.session?.user.last_sign_in_at ?? null,
-  });
+  try {
+    const { data, error } = await loadSupabase().getSupabase().auth.getSession();
+    const offline = !data.session && error !== null && loadActions().isRetryableAuthError(error);
+    useSession.setState({
+      ready: true,
+      signedIn: Boolean(data.session) || offline,
+      lastSignInAt: data.session?.user.last_sign_in_at ?? null,
+    });
+  } catch {
+    // Storage or lock failure: never leave the app on the loading screen.
+    useSession.setState({ ready: true, signedIn: false, lastSignInAt: null });
+  }
 }
 
 /** DEL-1: account deletion needs a sign-in within the last 10 minutes. */

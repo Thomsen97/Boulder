@@ -9,6 +9,7 @@ import { startSessionSync, useSession } from "./store";
 // Live mode with a fake Supabase client that behaves like the real one for the parts we use.
 function createFakeSupabase() {
   let sessionError: unknown = null;
+  let rejectGetSession = false;
   let listener: ((event: string, session: Session | null) => void) | undefined;
   let current: Session | null = null;
   const signOut = jest.fn(async () => {
@@ -24,7 +25,10 @@ function createFakeSupabase() {
         setTimeout(() => cb?.("INITIAL_SESSION", current), 0);
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
-      getSession: async () => ({ data: { session: current }, error: sessionError }),
+      getSession: async () => {
+        if (rejectGetSession) throw new Error("storage failed");
+        return { data: { session: current }, error: sessionError };
+      },
       signOut,
     },
   } as unknown as SupabaseClient;
@@ -33,6 +37,7 @@ function createFakeSupabase() {
     signOut,
     store: (session: Session | null) => (current = session),
     failSession: (error: unknown) => (sessionError = error),
+    rejectSession: () => (rejectGetSession = true),
     emit: (event: string, session: Session | null) => {
       current = session;
       listener?.(event, session);
@@ -154,6 +159,14 @@ describe("live session (AUTH-5)", () => {
   it("signs out at start when the stored session is really gone", async () => {
     startSessionSync();
     await new Promise((r) => setTimeout(r, 5));
+    expect(useSession.getState()).toMatchObject({ ready: true, signedIn: false });
+  });
+
+  it("never stays on the loading screen when restoring the session throws", async () => {
+    fake.rejectSession();
+    startSessionSync();
+    await new Promise((r) => setTimeout(r, 5));
+
     expect(useSession.getState()).toMatchObject({ ready: true, signedIn: false });
   });
 });
