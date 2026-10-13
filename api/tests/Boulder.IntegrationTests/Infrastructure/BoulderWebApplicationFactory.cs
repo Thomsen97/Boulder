@@ -71,9 +71,14 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
-        // appsettings.Test.json logs warnings only; the request log (information) is what the SEC-11 test checks.
+        // appsettings.Test.json logs warnings only; the SEC-11 test needs the same verbosity as Development.
         builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["Serilog:MinimumLevel:Default"] = "Information" }));
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Serilog:MinimumLevel:Default"] = "Information",
+                // Development logs hosting diagnostics at information ("Request starting {Path}").
+                ["Serilog:MinimumLevel:Override:Microsoft"] = "Information"
+            }));
         builder.ConfigureTestServices(services =>
         {
             services.AddHttpClient(JwksKeyCache.HttpClientName)
