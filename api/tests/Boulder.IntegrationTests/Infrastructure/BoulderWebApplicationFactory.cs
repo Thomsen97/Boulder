@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog.Core;
 using Testcontainers.PostgreSql;
 
 namespace Boulder.IntegrationTests.Infrastructure;
@@ -31,6 +32,9 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
     /// <summary>The API's clock; tests move it forward to pass time-based limits.</summary>
     public TestClock Clock { get; } = new();
+
+    /// <summary>Every log event the API writes.</summary>
+    public CapturingLogSink LogSink { get; } = new();
 
     public async Task InitializeAsync()
     {
@@ -67,11 +71,21 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
+        // appsettings.Test.json logs warnings only; the SEC-11 test needs the same verbosity as Development.
+        builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Serilog:MinimumLevel:Default"] = "Information",
+                // Development logs hosting diagnostics at information ("Request starting {Path}").
+                ["Serilog:MinimumLevel:Override:Microsoft"] = "Information"
+            }));
         builder.ConfigureTestServices(services =>
         {
             services.AddHttpClient(JwksKeyCache.HttpClientName)
                 .ConfigurePrimaryHttpMessageHandler(() => Jwks);
             services.AddSingleton<TimeProvider>(Clock);
+            // Program.cs reads sinks from the services (ReadFrom.Services).
+            services.AddSingleton<ILogEventSink>(LogSink);
         });
     }
 
@@ -94,7 +108,8 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         UserStatus status = UserStatus.Active,
         UserRole role = UserRole.User,
         bool isPrivate = false,
-        DateTimeOffset? usernameChangedAt = null)
+        DateTimeOffset? usernameChangedAt = null,
+        string bio = "")
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BoulderDbContext>();
@@ -103,6 +118,7 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             AuthSubject = subject,
             Username = username ?? NewUsername(),
             DisplayName = "Seeded",
+            Bio = bio,
             Status = status,
             Role = role,
             IsPrivate = isPrivate,

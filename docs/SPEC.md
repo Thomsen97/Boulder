@@ -217,7 +217,7 @@ All media objects live in a **private** bucket. Clients only receive short-lived
 - **PROF-2** Profiles are public by default and can be set private.
 - **PROF-3** Following a public profile is immediate. Following a private profile creates a request that the target accepts or declines; the requester can cancel it.
 - **PROF-4** A user can remove any follower.
-- **PROF-5** The profile header (avatar, names, follower counts, private flag) is visible to every signed-in user who is not in a blocked pair, even for private profiles. Posts, stats, ascents and follower lists follow section 5.
+- **PROF-5** The profile header (avatar, names, bio, follower counts, private flag) is visible to every signed-in user who is not in a blocked pair, even for private profiles. Posts, stats, ascents and follower lists follow section 5.
 - **PROF-6** User search by username/display name prefix. Blocked pairs never find each other.
 - **PROF-7** On their own profile, users see all their posts (including group-only and private) with audience badges.
 
