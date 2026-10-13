@@ -21,7 +21,7 @@ export default function RootLayout() {
     configureApiAuth({
       getToken: getAccessToken,
       refresh: refreshAccessToken,
-      onSignedOut: () => useSession.getState().signOut(),
+      onSignedOut: () => useSession.getState().endSession(),
     });
     return startSessionSync();
   }, []);

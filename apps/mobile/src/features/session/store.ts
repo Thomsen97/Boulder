@@ -14,6 +14,8 @@ interface SessionState {
   /** Mock mode only. In live mode the session comes from Supabase (see `startSessionSync`). */
   signIn: (now?: Date) => void;
   signOut: () => void;
+  /** Live mode: the session is already invalid (rejected refresh, repeated 401). Clears this device only. */
+  endSession: () => void;
 }
 
 export const useSession = create<SessionState>((set) => ({
@@ -25,7 +27,14 @@ export const useSession = create<SessionState>((set) => ({
     set({ signedIn: false, lastSignInAt: null });
     if (isLive())
       void loadActions()
-        .signOutOfSupabase()
+        .signOutOfSupabase("global")
+        .catch(() => undefined);
+  },
+  endSession: () => {
+    set({ signedIn: false, lastSignInAt: null });
+    if (isLive())
+      void loadActions()
+        .signOutOfSupabase("local")
         .catch(() => undefined);
   },
 }));
@@ -36,20 +45,36 @@ export const useSession = create<SessionState>((set) => ({
  * Supabase rejects. Returns the unsubscribe function.
  */
 export function startSessionSync(): () => void {
-  const { data } = loadSupabase()
-    .getSupabase()
-    .auth.onAuthStateChange((_event, session) => {
-      useSession.setState(
-        session
-          ? {
-              ready: true,
-              signedIn: true,
-              lastSignInAt: session.user.last_sign_in_at ?? new Date().toISOString(),
-            }
-          : { ready: true, signedIn: false, lastSignInAt: null },
-      );
-    });
+  const auth = loadSupabase().getSupabase().auth;
+  const { data } = auth.onAuthStateChange((event, session) => {
+    if (session) {
+      useSession.setState({
+        ready: true,
+        signedIn: true,
+        lastSignInAt: session.user.last_sign_in_at ?? new Date().toISOString(),
+      });
+    } else if (event === "INITIAL_SESSION") {
+      void restoreWithoutNetwork();
+    } else {
+      useSession.setState({ ready: true, signedIn: false, lastSignInAt: null });
+    }
+  });
   return () => data.subscription.unsubscribe();
+}
+
+/**
+ * Supabase reports "no session" at start when the stored access token has expired and the refresh
+ * could not reach the server. That is not a sign-out: the gym often has poor reception. Keep the
+ * user signed in; requests fail with the normal error state until a refresh succeeds.
+ */
+async function restoreWithoutNetwork() {
+  const { data, error } = await loadSupabase().getSupabase().auth.getSession();
+  const offline = !data.session && error !== null && loadActions().isRetryableAuthError(error);
+  useSession.setState({
+    ready: true,
+    signedIn: Boolean(data.session) || offline,
+    lastSignInAt: data.session?.user.last_sign_in_at ?? null,
+  });
 }
 
 /** DEL-1: account deletion needs a sign-in within the last 10 minutes. */

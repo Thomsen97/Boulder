@@ -1,4 +1,4 @@
-import type { Session, SupabaseClient } from "@supabase/supabase-js";
+import { AuthRetryableFetchError, type Session, type SupabaseClient } from "@supabase/supabase-js";
 
 import { createAuthFetch } from "@/lib/api/client";
 import { getAccessToken } from "@/lib/auth/actions";
@@ -8,6 +8,7 @@ import { startSessionSync, useSession } from "./store";
 
 // Live mode with a fake Supabase client that behaves like the real one for the parts we use.
 function createFakeSupabase() {
+  let sessionError: unknown = null;
   let listener: ((event: string, session: Session | null) => void) | undefined;
   let current: Session | null = null;
   const signOut = jest.fn(async () => {
@@ -23,7 +24,7 @@ function createFakeSupabase() {
         setTimeout(() => cb?.("INITIAL_SESSION", current), 0);
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
-      getSession: async () => ({ data: { session: current } }),
+      getSession: async () => ({ data: { session: current }, error: sessionError }),
       signOut,
     },
   } as unknown as SupabaseClient;
@@ -31,6 +32,7 @@ function createFakeSupabase() {
     client,
     signOut,
     store: (session: Session | null) => (current = session),
+    failSession: (error: unknown) => (sessionError = error),
     emit: (event: string, session: Session | null) => {
       current = session;
       listener?.(event, session);
@@ -117,5 +119,41 @@ describe("live session (AUTH-5)", () => {
     fake.emit("SIGNED_IN", session("token-1"));
     fake.emit("SIGNED_OUT", null);
     expect(useSession.getState()).toMatchObject({ signedIn: false, lastSignInAt: null });
+  });
+
+  it("an automatic sign-out only clears this device", async () => {
+    startSessionSync();
+    fake.emit("SIGNED_IN", session("token-1"));
+
+    useSession.getState().endSession();
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(useSession.getState().signedIn).toBe(false);
+    expect(fake.signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("a user sign-out revokes the session on the server", async () => {
+    startSessionSync();
+    fake.emit("SIGNED_IN", session("token-1"));
+
+    useSession.getState().signOut();
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(fake.signOut).toHaveBeenCalledWith();
+  });
+
+  it("stays signed in when the app starts offline with an expired access token", async () => {
+    // Supabase reports INITIAL_SESSION with null when its refresh could not reach the server.
+    fake.failSession(new AuthRetryableFetchError("fetch failed", 0));
+    startSessionSync();
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(useSession.getState()).toMatchObject({ ready: true, signedIn: true });
+  });
+
+  it("signs out at start when the stored session is really gone", async () => {
+    startSessionSync();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(useSession.getState()).toMatchObject({ ready: true, signedIn: false });
   });
 });

@@ -95,4 +95,36 @@ describe("live ProfileApi", () => {
     fetchMock.mockResolvedValue(problem(404, "not_found"));
     await expect(api.getProfile("nobody")).rejects.toMatchObject({ status: 404 });
   });
+
+  it("maps a visible profile, converting the counts to numbers", async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        id: "0199aaaa-0000-7000-8000-000000000002",
+        username: "emma",
+        displayName: "Emma Berg",
+        bio: "Liker overheng.",
+        avatarUrl: null,
+        isPrivate: false,
+        isOwn: false,
+        followerCount: "12",
+        followingCount: 3,
+        followState: "pending",
+        canViewContent: true,
+      }),
+    );
+    await expect(api.getProfile("emma")).resolves.toMatchObject({
+      followerCount: 12,
+      followingCount: 3,
+      followState: "pending",
+      canViewContent: true,
+    });
+  });
+
+  it("delete account is not available until phase 21", async () => {
+    await expect(api.deleteAccount("emma")).rejects.toMatchObject({
+      status: 501,
+      code: "not_implemented",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

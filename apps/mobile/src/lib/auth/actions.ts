@@ -4,6 +4,9 @@ import * as WebBrowser from "expo-web-browser";
 
 import { getSupabase } from "./supabase";
 
+/** True when the request never reached Supabase (offline), so the session may still be valid. */
+export const isRetryableAuthError = isAuthRetryableFetchError;
+
 export class AuthError extends Error {
   constructor(public readonly kind: "cancelled" | "failed") {
     super(kind);
@@ -69,14 +72,19 @@ export async function refreshAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-/** Revokes the refresh token on the server; falls back to clearing only this device. */
-export async function signOutOfSupabase(): Promise<void> {
+/**
+ * Signs out. "global" also revokes the refresh token on the server (and so every other device);
+ * "local" only clears this device. Falls back to "local" when the server cannot be reached.
+ */
+export async function signOutOfSupabase(scope: "global" | "local" = "global"): Promise<void> {
   const auth = getSupabase().auth;
-  try {
-    const { error } = await auth.signOut();
-    if (!error) return;
-  } catch {
-    // fall through to the local sign-out
+  if (scope === "global") {
+    try {
+      const { error } = await auth.signOut();
+      if (!error) return;
+    } catch {
+      // fall through to the local sign-out
+    }
   }
   await auth.signOut({ scope: "local" });
 }

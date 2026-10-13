@@ -81,13 +81,14 @@ Phase 4 connects the app to Supabase Auth and to the local API. Expo Go cannot b
 ### 1. Supabase project (authentication only)
 
 Create a project in an EU region. Then:
-- Authentication, Sign In / Providers: enable **Email** (6-digit code, no magic links) and **Google**; keep **Allow anonymous sign-ins** off.
+- Authentication, Sign In / Providers: enable **Email** and **Google**; keep **Allow anonymous sign-ins** off. Under Email set **Email OTP Length** to **6** (the app only accepts 6 digits).
+- Authentication, Emails (Templates): Supabase sends a link unless the template contains the code. In both the **Magic link** and the **Confirm signup** template replace `{{ .ConfirmationURL }}` with `{{ .Token }}` (for example "Din kode er: {{ .Token }}"). Without this the email contains a link and sign-in with a code cannot be finished (AUTH-1: 6 digits, no magic links). The built-in email sender is limited to a few emails per hour and meant for testing; configure custom SMTP (for example Resend) before the beta.
 - Authentication, URL Configuration: add `boulder://**` to the redirect URLs.
 - Settings, JWT Signing Keys: the current key must be asymmetric (ECC P-256). The API only accepts ES256.
 - Google: in Google Cloud Console create an OAuth consent screen (External, Testing; add every tester as a test user) and a **Web application** OAuth client whose authorized redirect URI is the callback URL shown on Supabase's Google provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Put its Client ID and secret into the Supabase Google provider. The app uses the system browser for Google sign-in, so no Android client ID is needed yet.
 - Sign in with Apple (iOS) needs a paid Apple Developer Program membership and is deferred to phase 23. Live mode does not show the Apple button.
 
-Give the API the project settings with the `dotnet user-secrets` commands above.
+Give the API the project settings with the `dotnet user-secrets` commands in [Environment variables](#environment-variables).
 
 ### 2. Let the phone reach the API
 
@@ -114,7 +115,11 @@ npx eas-cli env:create --environment development --name EXPO_PUBLIC_SUPABASE_PUB
 npx eas-cli build --profile development --platform android
 ```
 
+`EXPO_PUBLIC_API_MODE=live` makes every feature live; a list such as `live,social:mock` keeps single features on mocks. `profile` needs `auth` to be live too (without a signed-in session every call is answered 401), so do not set `auth:mock` together with `profile:live`.
+
 `EXPO_PUBLIC_` values are bundled into the app, so only the public values go here: the Supabase URL and the **publishable** key, never the service role key. The values live in your Expo account, not in git. When the LAN address changes, update `EXPO_PUBLIC_API_URL` (`npx eas-cli env:update`) and rebuild, or run Metro with a local `apps/mobile/.env` (copy `.env.example`) and start `npx expo start --dev-client`: the dev client then reads `.env` from the Metro server and no rebuild is needed.
+
+The `development` profile is a debug build, which Android allows to use plain HTTP, so the app can reach `http://<PC IP>:5158`. A release build would need HTTPS (a tunnel). Local builds (`npx expo run:android`) are debug builds too and work the same way.
 
 Install the APK from the link EAS prints (open it on the phone), then start Metro on the PC with `npx expo start --dev-client` and open the app.
 

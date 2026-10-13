@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { LargeSecureStore } from "./largeSecureStore";
+import { ensureWebCrypto } from "./webCrypto";
 
 let shared: SupabaseClient | undefined;
 
@@ -17,6 +18,7 @@ export function getSupabase(): SupabaseClient {
       "EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required in live mode",
     );
   }
+  ensureWebCrypto();
   shared = createClient(url, key, {
     auth: {
       storage: new LargeSecureStore(),
