@@ -1,8 +1,7 @@
 import { create } from "zustand";
 
-import { signOutOfSupabase } from "@/lib/auth/actions";
-import { getSupabase } from "@/lib/auth/supabase";
 import { getApiMode } from "@/lib/api/mode";
+import { loadActions, loadSupabase } from "@/lib/auth/lazy";
 
 const isLive = () => getApiMode("auth") === "live";
 
@@ -24,7 +23,10 @@ export const useSession = create<SessionState>((set) => ({
   signIn: (now = new Date()) => set({ signedIn: true, lastSignInAt: now.toISOString() }),
   signOut: () => {
     set({ signedIn: false, lastSignInAt: null });
-    if (isLive()) void signOutOfSupabase().catch(() => undefined);
+    if (isLive())
+      void loadActions()
+        .signOutOfSupabase()
+        .catch(() => undefined);
   },
 }));
 
@@ -34,17 +36,19 @@ export const useSession = create<SessionState>((set) => ({
  * Supabase rejects. Returns the unsubscribe function.
  */
 export function startSessionSync(): () => void {
-  const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
-    useSession.setState(
-      session
-        ? {
-            ready: true,
-            signedIn: true,
-            lastSignInAt: session.user.last_sign_in_at ?? new Date().toISOString(),
-          }
-        : { ready: true, signedIn: false, lastSignInAt: null },
-    );
-  });
+  const { data } = loadSupabase()
+    .getSupabase()
+    .auth.onAuthStateChange((_event, session) => {
+      useSession.setState(
+        session
+          ? {
+              ready: true,
+              signedIn: true,
+              lastSignInAt: session.user.last_sign_in_at ?? new Date().toISOString(),
+            }
+          : { ready: true, signedIn: false, lastSignInAt: null },
+      );
+    });
   return () => data.subscription.unsubscribe();
 }
 

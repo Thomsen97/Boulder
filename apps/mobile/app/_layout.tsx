@@ -9,7 +9,7 @@ import { startSessionSync, useSession } from "@/features/session/store";
 import { QueryProvider } from "@/lib/api/QueryProvider";
 import { configureApiAuth } from "@/lib/api/client";
 import { getApiMode } from "@/lib/api/mode";
-import { getAccessToken, refreshAccessToken } from "@/lib/auth/actions";
+import { loadActions } from "@/lib/auth/lazy";
 import { useColors } from "@/theme";
 import { ErrorState, LoadingState } from "@/theme/components";
 
@@ -17,6 +17,7 @@ export default function RootLayout() {
   // Live mode: the API client sends the Supabase token and the store follows the Supabase session.
   useEffect(() => {
     if (getApiMode("auth") !== "live") return;
+    const { getAccessToken, refreshAccessToken } = loadActions();
     configureApiAuth({
       getToken: getAccessToken,
       refresh: refreshAccessToken,

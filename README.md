@@ -74,6 +74,50 @@ npm run api:types     # regenerate src/lib/api/schema.d.ts from api/openapi/v1.j
 
 The app reads two optional variables (copy `apps/mobile/.env.example` to `apps/mobile/.env`; Expo only reads `.env` from that folder): `EXPO_PUBLIC_API_MODE` (`mock`, `live` or a list such as `live,groups:mock`; default `mock`) and `EXPO_PUBLIC_API_URL`. A phone cannot reach `localhost` on the PC; use the PC's LAN address for live mode.
 
+## Real sign-in on a phone (development build)
+
+Phase 4 connects the app to Supabase Auth and to the local API. Expo Go cannot be used for this; you need a development build (Android, built by EAS in the cloud).
+
+### 1. Supabase project (authentication only)
+
+Create a project in an EU region. Then:
+- Authentication, Sign In / Providers: enable **Email** (6-digit code, no magic links) and **Google**; keep **Allow anonymous sign-ins** off.
+- Authentication, URL Configuration: add `boulder://**` to the redirect URLs.
+- Settings, JWT Signing Keys: the current key must be asymmetric (ECC P-256). The API only accepts ES256.
+- Google: in Google Cloud Console create an OAuth consent screen (External, Testing; add every tester as a test user) and a **Web application** OAuth client whose authorized redirect URI is the callback URL shown on Supabase's Google provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Put its Client ID and secret into the Supabase Google provider. The app uses the system browser for Google sign-in, so no Android client ID is needed yet.
+- Sign in with Apple (iOS) needs a paid Apple Developer Program membership and is deferred to phase 23. Live mode does not show the Apple button.
+
+Give the API the project settings with the `dotnet user-secrets` commands above.
+
+### 2. Let the phone reach the API
+
+`localhost` on the phone is the phone itself. With the phone on the same Wi-Fi as the PC:
+
+1. Find the PC's LAN address (`ipconfig`, the IPv4 address of the Wi-Fi adapter), for example `192.168.1.10`.
+2. Start the API on all interfaces: `dotnet run --project api/src/Boulder.Api --urls http://0.0.0.0:5158`.
+3. Allow the port once in an administrator PowerShell: `New-NetFirewallRule -DisplayName "Boulder API (dev)" -Direction Inbound -Protocol TCP -LocalPort 5158 -Action Allow -Profile Private`. Remove it with `Remove-NetFirewallRule -DisplayName "Boulder API (dev)"` when you are done.
+4. Check from the phone's browser: `http://192.168.1.10:5158/health` answers `Healthy`.
+
+If the PC and phone are not on the same network, use a tunnel instead (for example `cloudflared tunnel --url http://localhost:5158`) and use its HTTPS address as the API URL.
+
+### 3. Build and install the development build
+
+From `apps/mobile` (the EAS CLI runs through `npx`, nothing to install globally):
+
+```sh
+npx eas-cli login
+npx eas-cli init                      # creates the EAS project and prints its id; add it to app.config.ts as extra.eas.projectId
+npx eas-cli env:create --environment development --name EXPO_PUBLIC_API_MODE --value live --visibility plaintext
+npx eas-cli env:create --environment development --name EXPO_PUBLIC_API_URL --value http://192.168.1.10:5158 --visibility plaintext
+npx eas-cli env:create --environment development --name EXPO_PUBLIC_SUPABASE_URL --value https://<project-ref>.supabase.co --visibility plaintext
+npx eas-cli env:create --environment development --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value <publishable key> --visibility plaintext
+npx eas-cli build --profile development --platform android
+```
+
+`EXPO_PUBLIC_` values are bundled into the app, so only the public values go here: the Supabase URL and the **publishable** key, never the service role key. The values live in your Expo account, not in git. When the LAN address changes, update `EXPO_PUBLIC_API_URL` (`npx eas-cli env:update`) and rebuild, or run Metro with a local `apps/mobile/.env` (copy `.env.example`) and start `npx expo start --dev-client`: the dev client then reads `.env` from the Metro server and no rebuild is needed.
+
+Install the APK from the link EAS prints (open it on the phone), then start Metro on the PC with `npx expo start --dev-client` and open the app.
+
 ## Adding a migration
 
 ```sh
@@ -104,4 +148,11 @@ docs/                      SPEC.md, PLAN.md, architecture.md, ADRs
 
 `.env.example` documents every variable the application reads. `.env` is git-ignored and must never be committed.
 
-For local development `ConnectionStrings__Default` is already set in `appsettings.Development.json` to match the docker-compose defaults, so no `.env` file is needed for the API. The same file holds placeholder values for `Supabase__JwksUrl` and `Supabase__Issuer`: the API starts and exports OpenAPI with them, but accepts no real token until phase 4 sets up a Supabase project and you put its values in the environment. Outside Development the API refuses to start without these two settings. The other variables (Cloudflare R2, etc.) are used by the production deployment and by later phases; see `.env.example` for details.
+For local development `ConnectionStrings__Default` is already set in `appsettings.Development.json` to match the docker-compose defaults, so no `.env` file is needed for the API. The API does **not** read `.env` itself: `dotnet run` takes its settings from `appsettings*.json`, environment variables and (in Development) .NET user secrets. `appsettings.Development.json` holds placeholders for `Supabase:JwksUrl` and `Supabase:Issuer`: the API starts and exports OpenAPI with them, but accepts no real token. To accept tokens from your Supabase project, set the real values once as user secrets (stored outside the repository):
+
+```sh
+dotnet user-secrets set "Supabase:JwksUrl" "https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json" --project api/src/Boulder.Api
+dotnet user-secrets set "Supabase:Issuer" "https://<project-ref>.supabase.co/auth/v1" --project api/src/Boulder.Api
+```
+
+Outside Development the API refuses to start without these two settings; there they come from environment variables (`Supabase__JwksUrl`, `Supabase__Issuer`, see `.env.example`). The other variables (Cloudflare R2, etc.) are used by the production deployment and by later phases; see `.env.example` for details.

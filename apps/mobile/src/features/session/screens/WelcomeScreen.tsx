@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Platform, Text, View } from "react-native";
 
 import { getApiMode } from "@/lib/api/mode";
-import { AuthError, sendEmailCode, signInWithGoogle, verifyEmailCode } from "@/lib/auth/actions";
+import { loadActions } from "@/lib/auth/lazy";
 import { spacing, useColors, useTypography } from "@/theme";
 import { Button, Screen, TextField } from "@/theme/components";
 
@@ -37,7 +37,7 @@ export function WelcomeScreen() {
       onDone?.();
     } catch (e) {
       // Closing the browser is not an error; the session store signs in on success.
-      if (!(e instanceof AuthError && e.kind === "cancelled")) setError(failure);
+      if (!(e instanceof loadActions().AuthError && e.kind === "cancelled")) setError(failure);
     } finally {
       setBusy(false);
     }
@@ -56,6 +56,14 @@ export function WelcomeScreen() {
 
       {step === "choose" ? (
         <View style={{ gap: spacing.sm }}>
+          {error ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[typography.body, { color: colors.danger }]}
+            >
+              {error}
+            </Text>
+          ) : null}
           {showApple ? (
             <Button label={t("welcome.signInApple")} onPress={() => mockSignIn()} />
           ) : null}
@@ -64,7 +72,9 @@ export function WelcomeScreen() {
             label={t("welcome.signInGoogle")}
             loading={busy}
             onPress={() =>
-              live ? void run(signInWithGoogle, t("welcome.errorGoogle")) : mockSignIn()
+              live
+                ? void run(() => loadActions().signInWithGoogle(), t("welcome.errorGoogle"))
+                : mockSignIn()
             }
           />
           <Button
@@ -96,7 +106,7 @@ export function WelcomeScreen() {
             disabled={!email.includes("@")}
             onPress={() =>
               void run(
-                () => sendEmailCode(email),
+                () => loadActions().sendEmailCode(email),
                 t("welcome.errorEmail"),
                 () => setStep("code"),
               )
@@ -130,7 +140,9 @@ export function WelcomeScreen() {
             label={busy ? t("welcome.signingIn") : t("welcome.verifyCode")}
             loading={busy}
             disabled={code.length !== 6}
-            onPress={() => void run(() => verifyEmailCode(email, code), t("welcome.errorCode"))}
+            onPress={() =>
+              void run(() => loadActions().verifyEmailCode(email, code), t("welcome.errorCode"))
+            }
           />
           <Button
             variant="secondary"
