@@ -96,6 +96,21 @@ public class UserProfileTests(BoulderWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task PrivateProfile_ShowsItsBioToStrangers()
+    {
+        // PROF-5: the bio is part of the header.
+        var viewer = await Seed();
+        var subject = BoulderWebApplicationFactory.NewSubject();
+        var target = await factory.SeedUserAsync(subject, isPrivate: true, bio: "Slab enjoyer");
+        var client = factory.CreateClientFor(viewer.Subject);
+
+        var body = await (await client.GetAsync($"/api/v1/users/{target.Username}")).Json();
+
+        Assert.False(body.GetProperty("canViewContent").GetBoolean());
+        Assert.Equal("Slab enjoyer", body.GetProperty("bio").GetString());
+    }
+
+    [Fact]
     public async Task Lookup_IsCaseInsensitive()
     {
         var me = await Seed();

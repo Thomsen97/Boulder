@@ -2,11 +2,13 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Boulder.Api.Auth;
 using Boulder.Api.Errors;
 using Boulder.Api.Features.Users;
+using Boulder.Api.Logging;
 using Boulder.Api.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Boulder.Infrastructure;
 using Scalar.AspNetCore;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,7 @@ builder.Host.UseSerilog((ctx, services, config) =>
         .ReadFrom.Configuration(ctx.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
+        .Enrich.With<RequestPathRemover>()
         .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter()));
 
 builder.Services.AddSingleton(TimeProvider.System);
@@ -46,11 +49,21 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 // SEC-11: log the route pattern, not the path, because the path of the user endpoints contains usernames.
+// The default template properties include RequestPath, so they are replaced; RequestPath is also removed from
+// every other event by RequestPathRemover.
 app.UseSerilogRequestLogging(options =>
 {
+    // The host's own logger, not the static Log.Logger, which the last host built in a process would replace.
+    options.Logger = app.Services.GetRequiredService<Serilog.ILogger>();
     options.MessageTemplate = "HTTP {RequestMethod} {RoutePattern} responded {StatusCode} in {Elapsed:0.0000} ms";
-    options.EnrichDiagnosticContext = (diagnostics, httpContext) =>
-        diagnostics.Set("RoutePattern", (httpContext.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "(no route)");
+    options.GetMessageTemplateProperties = (httpContext, _, elapsedMs, statusCode) =>
+    [
+        new LogEventProperty("RequestMethod", new ScalarValue(httpContext.Request.Method)),
+        new LogEventProperty("RoutePattern", new ScalarValue(
+            (httpContext.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "(no route)")),
+        new LogEventProperty("StatusCode", new ScalarValue(statusCode)),
+        new LogEventProperty("Elapsed", new ScalarValue(elapsedMs))
+    ];
 });
 
 // Architecture 3.3: authentication, account gate, rate limiter, endpoint.
