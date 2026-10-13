@@ -36,8 +36,8 @@ Source of truth for **what** to build: [`SPEC.md`](SPEC.md). Structure and rules
 | 0 | API foundation and CI | B1 | none | Done |
 | 1 | Mobile foundation | B1 | 0 | Done |
 | 2 | UI: onboarding, profile, settings | B1 | 1 | Done |
-| 3 | API: authentication, users, onboarding | B1 | 0 | In review |
-| 4 | Real sign-in and first development builds | B1 | 2, 3 | Not started |
+| 3 | API: authentication, users, onboarding | B1 | 0 | Done |
+| 4 | Real sign-in and first development builds | B1 | 2, 3 | In progress |
 | 5 | Social graph: follows, blocks, search | B1 | 4 | Not started |
 | 6 | UI: groups | B1 | 1 | Not started |
 | 7 | API: groups, roles, invites | B1 | 4, 6 | Not started |
