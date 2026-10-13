@@ -1,6 +1,10 @@
+using System.Net.Http.Headers;
+using Boulder.Api.Auth;
+using Boulder.Domain.Users;
 using Boulder.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +17,17 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
+
+    public BoulderWebApplicationFactory()
+    {
+        Jwks = new StubJwksHandler();
+        Jwt = new TestJwt(Jwks);
+    }
+
+    /// <summary>The JWKS the API downloads; tests add keys to it to rotate signing keys.</summary>
+    public StubJwksHandler Jwks { get; }
+
+    public TestJwt Jwt { get; }
 
     public async Task InitializeAsync()
     {
@@ -37,7 +52,11 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         builder.ConfigureHostConfiguration(config =>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString(),
+                ["Supabase:JwksUrl"] = "http://jwks.test/auth/v1/.well-known/jwks.json",
+                ["Supabase:Issuer"] = TestJwt.Issuer,
+                // Zero so the key rotation test can force a refetch right away.
+                ["Supabase:JwksMinRefetchInterval"] = "00:00:00"
             }));
         return base.CreateHost(builder);
     }
@@ -45,5 +64,62 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
+        builder.ConfigureTestServices(services =>
+            services.AddHttpClient(JwksKeyCache.HttpClientName)
+                .ConfigurePrimaryHttpMessageHandler(() => Jwks));
     }
+
+    /// <summary>A client that sends a valid access token for <paramref name="subject"/>.</summary>
+    public HttpClient CreateClientFor(string subject)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Jwt.Create(subject));
+        return client;
+    }
+
+    public static string NewSubject() => Guid.NewGuid().ToString();
+
+    /// <summary>A short unique username that passes AUTH-4.</summary>
+    public static string NewUsername() => "u" + Guid.NewGuid().ToString("N")[..12];
+
+    public async Task<User> SeedUserAsync(
+        string subject,
+        string? username = null,
+        UserStatus status = UserStatus.Active,
+        bool isPrivate = false,
+        DateTimeOffset? usernameChangedAt = null)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BoulderDbContext>();
+        var user = new User
+        {
+            AuthSubject = subject,
+            Username = username ?? NewUsername(),
+            DisplayName = "Seeded",
+            Status = status,
+            IsPrivate = isPrivate,
+            UsernameChangedAt = usernameChangedAt,
+            AgeConfirmedAt = DateTimeOffset.UtcNow,
+            GuidelinesVersion = "1",
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        db.Set<User>().Add(user);
+        await db.SaveChangesAsync();
+        return user;
+    }
+
+    public async Task SetUsernameChangedAtAsync(Guid userId, DateTimeOffset? value)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BoulderDbContext>();
+        var user = await db.Set<User>().SingleAsync(u => u.Id == userId);
+        user.UsernameChangedAt = value;
+        await db.SaveChangesAsync();
+    }
+}
+
+[CollectionDefinition(Name)]
+public sealed class ApiCollection : ICollectionFixture<BoulderWebApplicationFactory>
+{
+    public const string Name = "Api";
 }

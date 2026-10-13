@@ -40,7 +40,9 @@ public class HealthEndpointTests(BoulderWebApplicationFactory factory)
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:Default"] =
-                        "Host=127.0.0.1;Port=9999;Database=x;Username=x;Password=x;Timeout=1;Command Timeout=1"
+                        "Host=127.0.0.1;Port=9999;Database=x;Username=x;Password=x;Timeout=1;Command Timeout=1",
+                    ["Supabase:JwksUrl"] = "http://jwks.test/auth/v1/.well-known/jwks.json",
+                    ["Supabase:Issuer"] = TestJwt.Issuer
                 }));
             return base.CreateHost(builder);
         }

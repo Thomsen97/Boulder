@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Boulder.Api.Auth;
 using Boulder.Api.Errors;
+using Boulder.Api.Features.Users;
+using Boulder.Api.RateLimiting;
 using Boulder.Infrastructure;
 using Scalar.AspNetCore;
 using Serilog;
@@ -24,6 +27,10 @@ builder.Services
     .AddHealthChecks()
     .AddNpgSql(connectionString);
 
+builder.Services.AddSupabaseAuthentication(builder.Configuration);
+builder.Services.AddApiRateLimiting(builder.Configuration);
+builder.Services.AddUserFeature();
+
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
 builder.Services.AddProblemDetails(options =>
@@ -39,11 +46,17 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseSerilogRequestLogging();
 
-app.MapOpenApi();
+// Architecture 3.3: authentication, account gate, rate limiter, endpoint.
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseMiddleware<AccountGateMiddleware>();
+app.UseRateLimiter();
+
+app.MapOpenApi().AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapScalarApiReference();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 app.MapGet("/health", async (HealthCheckService health, CancellationToken ct) =>
@@ -57,8 +70,14 @@ app.MapGet("/health", async (HealthCheckService health, CancellationToken ct) =>
                 : StatusCodes.Status200OK);
     })
     .WithName("GetHealth")
+    .AllowAnonymous()
     .Produces<string>(StatusCodes.Status200OK, "text/plain")
     .Produces<string>(StatusCodes.Status503ServiceUnavailable, "text/plain");
+
+app.MapUserEndpoints();
+
+// The authorization fallback policy would answer 401 for unknown routes; they are plain 404s.
+app.MapFallback(() => Results.NotFound()).AllowAnonymous().ExcludeFromDescription();
 
 if (args.Contains("--export-openapi"))
 {
@@ -91,9 +110,11 @@ app.Run();
 static string MapStatusToCode(int status) => status switch
 {
     400 => ErrorCodes.ValidationFailed,
+    401 => ErrorCodes.Unauthorized,
     403 => ErrorCodes.Forbidden,
     404 => ErrorCodes.NotFound,
     409 => ErrorCodes.Conflict,
+    429 => ErrorCodes.RateLimited,
     _ => ErrorCodes.InternalError
 };
 
