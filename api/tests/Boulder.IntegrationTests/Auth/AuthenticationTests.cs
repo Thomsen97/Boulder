@@ -3,6 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Boulder.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Boulder.IntegrationTests.Auth;
 
@@ -143,6 +146,37 @@ public class AuthenticationTests(BoulderWebApplicationFactory factory)
         // The unknown kid made the API download the JWKS again.
         Assert.Equal(HttpStatusCode.OK, (await GetMeWith(token)).StatusCode);
         Assert.True(factory.Jwks.Requests > requestsBefore);
+    }
+
+    [Fact]
+    public async Task RevokedKey_StopsWorkingAfterTheJwksMaxAge()
+    {
+        var key = new TestSigningKey();
+        TestJwt.Publish(factory.Jwks, key);
+        var token = factory.Jwt.Create(BoulderWebApplicationFactory.NewSubject(), key: key);
+        Assert.Equal(HttpStatusCode.OK, (await GetMeWith(token)).StatusCode);
+
+        // Supabase drops the key from the JWKS. Inside the max age the cached key is still trusted ...
+        factory.Jwks.Keys.Remove(key);
+        Assert.Equal(HttpStatusCode.OK, (await GetMeWith(token)).StatusCode);
+
+        // ... after it the JWKS is downloaded again and the revoked key is gone.
+        factory.Clock.Advance(TimeSpan.FromMinutes(11));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await GetMeWith(token)).StatusCode);
+    }
+
+    [Fact]
+    public void TokenValidation_AcceptsOnlyEs256SignedTokens()
+    {
+        // SEC-2: HS256 and unsigned tokens must be rejected by the algorithm rules themselves, not only because
+        // no matching key exists.
+        var options = factory.Services
+            .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.Equal(["ES256"], options.TokenValidationParameters.ValidAlgorithms);
+        Assert.True(options.TokenValidationParameters.RequireSignedTokens);
+        Assert.True(options.TokenValidationParameters.ValidateIssuerSigningKey);
     }
 
     [Fact]

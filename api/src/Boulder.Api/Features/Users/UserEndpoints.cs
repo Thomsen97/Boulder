@@ -21,7 +21,10 @@ public static class UserEndpoints
 
     public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var api = app.MapGroup("/api/v1").WithTags("Users");
+        var api = app.MapGroup("/api/v1")
+            .WithTags("Users")
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden); // onboarding_required, account_suspended
 
         // Before onboarding the body only says onboardingComplete: false; a suspended user still gets 200 (AUTH-6).
         api.MapGet("/me", (GetMeHandler handler) => TypedResults.Ok(handler.Handle()))

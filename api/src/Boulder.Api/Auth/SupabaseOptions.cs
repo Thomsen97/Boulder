@@ -13,4 +13,10 @@ public sealed class SupabaseOptions
 
     /// <summary>Shortest time between two JWKS downloads, so unknown <c>kid</c> values cannot hammer Supabase.</summary>
     public TimeSpan JwksMinRefetchInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Longest time a downloaded key set is trusted. After this the JWKS is downloaded again even for a known
+    /// <c>kid</c>, so a key that Supabase revokes stops working.
+    /// </summary>
+    public TimeSpan JwksMaxAge { get; set; } = TimeSpan.FromMinutes(10);
 }

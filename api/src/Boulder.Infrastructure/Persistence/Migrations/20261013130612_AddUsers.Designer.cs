@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Boulder.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BoulderDbContext))]
-    [Migration("20261013113101_AddUsers")]
+    [Migration("20261013130612_AddUsers")]
     partial class AddUsers
     {
         /// <inheritdoc />
@@ -72,7 +72,9 @@ namespace Boulder.Infrastructure.Persistence.Migrations
                         .HasColumnName("guidelines_version");
 
                     b.Property<bool>("IsPrivate")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_private");
 
                     b.Property<string>("Role")
@@ -83,7 +85,9 @@ namespace Boulder.Infrastructure.Persistence.Migrations
                         .HasColumnName("role");
 
                     b.Property<bool>("ShareAscents")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(true)
                         .HasColumnName("share_ascents");
 
                     b.Property<string>("SpoilerMode")

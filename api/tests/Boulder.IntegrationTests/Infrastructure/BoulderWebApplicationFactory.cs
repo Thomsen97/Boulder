@@ -29,6 +29,9 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
     public TestJwt Jwt { get; }
 
+    /// <summary>The API's clock; tests move it forward to pass time-based limits.</summary>
+    public TestClock Clock { get; } = new();
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
@@ -65,8 +68,11 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
     {
         builder.UseEnvironment("Test");
         builder.ConfigureTestServices(services =>
+        {
             services.AddHttpClient(JwksKeyCache.HttpClientName)
-                .ConfigurePrimaryHttpMessageHandler(() => Jwks));
+                .ConfigurePrimaryHttpMessageHandler(() => Jwks);
+            services.AddSingleton<TimeProvider>(Clock);
+        });
     }
 
     /// <summary>A client that sends a valid access token for <paramref name="subject"/>.</summary>
@@ -86,6 +92,7 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         string subject,
         string? username = null,
         UserStatus status = UserStatus.Active,
+        UserRole role = UserRole.User,
         bool isPrivate = false,
         DateTimeOffset? usernameChangedAt = null)
     {
@@ -97,6 +104,7 @@ public class BoulderWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             Username = username ?? NewUsername(),
             DisplayName = "Seeded",
             Status = status,
+            Role = role,
             IsPrivate = isPrivate,
             UsernameChangedAt = usernameChangedAt,
             AgeConfirmedAt = DateTimeOffset.UtcNow,

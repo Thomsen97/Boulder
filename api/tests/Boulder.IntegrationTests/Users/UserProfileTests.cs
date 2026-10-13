@@ -30,6 +30,8 @@ public class UserProfileTests(BoulderWebApplicationFactory factory)
     [InlineData("stranger",                "suspended",            404,         null)]
     [InlineData("stranger",                "deleted",              404,         null)]
     [InlineData("stranger",                "no such user",         404,         null)]
+    [InlineData("app admin",               "public profile",       200,         true)]  // no special rights on normal endpoints
+    [InlineData("app admin",               "private profile",      200,         false)]
     [InlineData("suspended viewer",        "public profile",       403,         null)]
     [InlineData("not onboarded viewer",    "public profile",       403,         null)]
     [InlineData("anonymous",               "public profile",       401,         null)]
@@ -43,12 +45,15 @@ public class UserProfileTests(BoulderWebApplicationFactory factory)
         var deletedTarget = await Seed(status: UserStatus.Deleted);
         var suspendedViewer = await Seed(status: UserStatus.Suspended);
         var stranger = await Seed();
+        var admin = BoulderWebApplicationFactory.NewSubject();
+        await factory.SeedUserAsync(admin, role: UserRole.Admin);
 
         var client = viewer switch
         {
             "self" => factory.CreateClientFor(self.Subject),
             "self private" => factory.CreateClientFor(selfPrivate.Subject),
             "stranger" => factory.CreateClientFor(stranger.Subject),
+            "app admin" => factory.CreateClientFor(admin),
             "suspended viewer" => factory.CreateClientFor(suspendedViewer.Subject),
             "not onboarded viewer" => factory.CreateClientFor(BoulderWebApplicationFactory.NewSubject()),
             "anonymous" => factory.CreateClient(),

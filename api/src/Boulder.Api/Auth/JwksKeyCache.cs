@@ -23,7 +23,7 @@ public sealed class JwksKeyCache(
 
     public async Task EnsureKeyAsync(string? kid, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(kid) || Contains(kid))
+        if (string.IsNullOrEmpty(kid) || (Contains(kid) && !IsStale()))
         {
             return;
         }
@@ -31,7 +31,7 @@ public sealed class JwksKeyCache(
         await _fetchLock.WaitAsync(ct);
         try
         {
-            if (Contains(kid))
+            if (Contains(kid) && !IsStale())
             {
                 return;
             }
@@ -52,6 +52,9 @@ public sealed class JwksKeyCache(
     }
 
     private bool Contains(string kid) => _keys.Any(k => k.KeyId == kid);
+
+    // A key that Supabase dropped from the JWKS must not stay trusted until the process restarts.
+    private bool IsStale() => time.GetUtcNow() - _lastFetch > options.Value.JwksMaxAge;
 
     private async Task FetchAsync(CancellationToken ct)
     {

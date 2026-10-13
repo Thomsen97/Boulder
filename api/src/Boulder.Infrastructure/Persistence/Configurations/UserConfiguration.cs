@@ -25,6 +25,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Username).HasColumnType("citext").IsRequired();
         builder.Property(u => u.DisplayName).HasMaxLength(User.DisplayNameMaxLength).IsRequired();
         builder.Property(u => u.Bio).HasMaxLength(User.BioMaxLength).IsRequired();
+        builder.Property(u => u.IsPrivate).HasDefaultValue(false).IsRequired();
+        builder.Property(u => u.ShareAscents).HasDefaultValue(true).IsRequired();
         builder.Property(u => u.GuidelinesVersion).HasMaxLength(User.GuidelinesVersionMaxLength).IsRequired();
 
         builder.Property(u => u.SpoilerMode)

@@ -11,8 +11,8 @@ public sealed class GetUserProfileHandler(ICurrentUser current, IUserStore users
         var viewer = current.User ?? throw new InvalidOperationException("The account gate guarantees an onboarded user.");
         var target = await users.FindByUsernameAsync(UsernameRules.Normalize(username), ct);
 
-        // Missing, deleted and (for others) suspended accounts look the same: 404, never 403 (SEC-3).
-        if (target is null || (target.Id != viewer.Id && target.Status != UserStatus.Active))
+        // Missing and invisible accounts look the same: 404, never 403 (SEC-3).
+        if (target is null)
         {
             return new Failure(FailureKind.NotFound);
         }

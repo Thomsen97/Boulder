@@ -3,6 +3,7 @@ using Boulder.Api.Auth;
 using Boulder.Api.Errors;
 using Boulder.Api.Features.Users;
 using Boulder.Api.RateLimiting;
+using Microsoft.AspNetCore.Routing;
 using Boulder.Infrastructure;
 using Scalar.AspNetCore;
 using Serilog;
@@ -44,7 +45,13 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.UseSerilogRequestLogging();
+// SEC-11: log the route pattern, not the path, because the path of the user endpoints contains usernames.
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RoutePattern} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.EnrichDiagnosticContext = (diagnostics, httpContext) =>
+        diagnostics.Set("RoutePattern", (httpContext.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "(no route)");
+});
 
 // Architecture 3.3: authentication, account gate, rate limiter, endpoint.
 app.UseAuthentication();
