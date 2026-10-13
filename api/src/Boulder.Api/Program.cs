@@ -120,7 +120,7 @@ if (args.Contains("--export-openapi"))
 
     Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
     await File.WriteAllTextAsync(outputPath, json + "\n");
-    Log.Information("OpenAPI document written to {Path}", outputPath);
+    Log.Information("OpenAPI document written to {OutputPath}", outputPath);
     await app.StopAsync();
     return;
 }
