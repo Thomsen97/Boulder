@@ -47,6 +47,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # Babel 8 is ESM-only and Jest cannot load it; the literal scan in no-literals.test.ts uses 7.x.
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
