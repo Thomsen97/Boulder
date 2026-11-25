@@ -107,17 +107,13 @@ From `apps/mobile` (the EAS CLI runs through `npx`, nothing to install globally)
 
 ```sh
 npx eas-cli login
-npx eas-cli init                      # creates the EAS project and prints its id; add it to app.config.ts as extra.eas.projectId
-npx eas-cli env:create --environment development --name EXPO_PUBLIC_API_MODE --value live --visibility plaintext
-npx eas-cli env:create --environment development --name EXPO_PUBLIC_API_URL --value http://192.168.1.10:5158 --visibility plaintext
-npx eas-cli env:create --environment development --name EXPO_PUBLIC_SUPABASE_URL --value https://<project-ref>.supabase.co --visibility plaintext
-npx eas-cli env:create --environment development --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value <publishable key> --visibility plaintext
+npx eas-cli init                      # creates the EAS project; the id and owner are already in app.config.ts (extra.eas.projectId), set them there for a new project
 npx eas-cli build --profile development --platform android
 ```
 
 `EXPO_PUBLIC_API_MODE=live` makes every feature live; a list such as `live,social:mock` keeps single features on mocks. `profile` needs `auth` to be live too (without a signed-in session every call is answered 401), so do not set `auth:mock` together with `profile:live`.
 
-`EXPO_PUBLIC_` values are bundled into the app, so only the public values go here: the Supabase URL and the **publishable** key, never the service role key. The values live in your Expo account, not in git. When the LAN address changes, update `EXPO_PUBLIC_API_URL` (`npx eas-cli env:update`) and rebuild, or run Metro with a local `apps/mobile/.env` (copy `.env.example`) and start `npx expo start --dev-client`: the dev client then reads `.env` from the Metro server and no rebuild is needed.
+The development build does not contain the app code: it loads the JavaScript from Metro on the PC at runtime, so the `EXPO_PUBLIC_*` settings come from your local `apps/mobile/.env` (copy `.env.example`; Metro reads it when it starts). They are bundled into the app code, so only public values belong there: the Supabase URL and the **publishable** key, never the service role key. When the LAN address changes, edit `.env` and restart Metro with `npx expo start --dev-client --clear`; no rebuild is needed. For the Android emulator use `http://10.0.2.2:5158` as `EXPO_PUBLIC_API_URL`: that is how the emulator reaches the PC.
 
 The `development` profile is a debug build, which Android allows to use plain HTTP, so the app can reach `http://<PC IP>:5158`. A release build would need HTTPS (a tunnel). Local builds (`npx expo run:android`) are debug builds too and work the same way.
 
