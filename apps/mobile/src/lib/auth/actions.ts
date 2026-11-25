@@ -41,7 +41,8 @@ export async function signInWithGoogle(): Promise<void> {
   const redirectTo = Linking.createURL("auth/callback");
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo, skipBrowserRedirect: true },
+    // select_account: always show the account chooser, so a shared phone does not sign in silently.
+    options: { redirectTo, skipBrowserRedirect: true, queryParams: { prompt: "select_account" } },
   });
   if (error || !data.url) throw new AuthError("failed");
 
