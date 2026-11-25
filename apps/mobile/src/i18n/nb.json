@@ -40,7 +40,19 @@
     "signInApple": "Fortsett med Apple",
     "signInGoogle": "Fortsett med Google",
     "signInEmail": "Fortsett med e-post",
-    "mockNotice": "Testversjon: innloggingen er foreløpig falsk, og alle data er eksempler."
+    "mockNotice": "Testversjon: innloggingen er foreløpig falsk, og alle data er eksempler.",
+    "emailLabel": "E-postadresse",
+    "emailHint": "Vi sender deg en kode på 6 siffer.",
+    "sendCode": "Send kode",
+    "codeLabel": "Kode fra e-posten",
+    "codeHint": "Koden er sendt til {{email}}.",
+    "verifyCode": "Logg inn",
+    "changeEmail": "Bruk en annen e-postadresse",
+    "back": "Tilbake",
+    "errorEmail": "Kunne ikke sende koden. Sjekk e-postadressen og prøv igjen.",
+    "errorCode": "Koden stemmer ikke eller er utløpt. Prøv igjen.",
+    "errorGoogle": "Innloggingen med Google mislyktes. Prøv igjen.",
+    "signingIn": "Logger inn …"
   },
   "onboarding": {
     "title": "Velkommen!",

@@ -15,6 +15,8 @@ interface TextFieldProps extends Pick<
   | "editable"
   | "returnKeyType"
   | "textContentType"
+  | "keyboardType"
+  | "autoComplete"
 > {
   label: string;
   /** Helper text or status shown under the field. */

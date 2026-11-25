@@ -13,20 +13,21 @@ If the code and the docs disagree, or the SPEC is ambiguous, stop and ask. Do no
 
 ## Commands
 
-Established in phases 0 and 1. Update this section in the same PR when a command changes.
+Established in phases 0, 1 and 4. Update this section in the same PR when a command changes.
 
 API (from the repo root, Docker Desktop running):
 - `docker compose -f infra/docker-compose.dev.yml up -d`: local Postgres
 - `dotnet build api/Boulder.sln`
 - `dotnet test api/Boulder.sln`
-- `dotnet run --project api/src/Boulder.Api`
+- `dotnet run --project api/src/Boulder.Api` (add `--urls http://0.0.0.0:5158` for a phone; Supabase settings come from `dotnet user-secrets`, the API does not read `.env`)
 - `dotnet ef migrations add <Name> --project api/src/Boulder.Infrastructure --startup-project api/src/Boulder.Api`
 - OpenAPI export: `dotnet run --project api/src/Boulder.Api -- --export-openapi --output-path "$(pwd)/api/openapi/v1.json"` (requires Postgres running; run from repo root)
 
 Mobile (in `apps/mobile`):
 - `npm run lint`, `npm run typecheck`, `npm test`
 - `npm run api:types`: regenerate types from `api/openapi/v1.json`
-- `npx expo start`
+- `npx expo start` (Expo Go, mock mode) or `npx expo start --dev-client` (development build, live mode)
+- `npx eas-cli build --profile development --platform android`: Android development build (README, "Real sign-in on a phone")
 
 **Standard checks** (all must pass before a PR): API build, API tests, mobile lint, typecheck and tests, and `npm run api:types` leaves no git diff.
 
